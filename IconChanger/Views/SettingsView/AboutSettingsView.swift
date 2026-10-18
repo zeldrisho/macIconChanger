@@ -30,6 +30,7 @@ struct AboutSettingsView: View {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "Unknown"
     }
 
+    /// Displays application details, update controls, and project links.
     var body: some View {
         VStack(spacing: 16) {
             Spacer()
@@ -164,6 +165,8 @@ struct AboutSettingsView: View {
         return Date().timeIntervalSince(modified) >= cacheMaxAge
     }
 
+    /// Downloads the repository owner's avatar and updates memory, disk, and displayed caches.
+    /// Leaves the current avatar unchanged if the download fails or is cancelled.
     private func fetchAndCacheAvatar() async {
         guard let url = URL(string: "https://github.com/zeldrisho.png?size=64") else { return }
         do {

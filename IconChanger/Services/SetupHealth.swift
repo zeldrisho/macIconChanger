@@ -42,6 +42,7 @@ enum SetupHealth: Equatable {
         }
     }
 
+    /// A localized setup status description, or the underlying error message.
     var statusDescription: String {
         switch self {
         case .checking:

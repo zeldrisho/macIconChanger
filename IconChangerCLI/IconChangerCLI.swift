@@ -54,6 +54,8 @@ private let appearanceMetadataFile = applicationSupportRoot.appendingPathCompone
 private let helperScript = URL(fileURLWithPath: "/Library/PrivilegedHelperTools/IconChanger/helper.sh")
 private let fileicon = URL(fileURLWithPath: "/Library/PrivilegedHelperTools/IconChanger/fileicon")
 
+/// Sets an icon, or removes it when `imagePath` is `nil`, using current-user access when possible.
+/// Protected targets use the optional privileged helper. Throws if loading, setup, or application fails.
 private func applyIcon(imagePath: String?, to appPath: String) throws {
     let fm = FileManager.default
     let attributes = try? fm.attributesOfItem(atPath: appPath)
@@ -609,6 +611,8 @@ struct SetIconCommand: ParsableCommand {
     @Argument(help: "Path to the icon image (PNG, ICNS, JPEG, etc.)")
     var iconPath: String
 
+    /// Validates the app and image paths, applies the icon, and prints confirmation.
+    /// Throws if validation or the icon change fails.
     func run() throws {
         let fm = FileManager.default
 
@@ -647,6 +651,8 @@ struct RemoveIconCommand: ParsableCommand {
     @Argument(help: "Path to the .app bundle")
     var appPath: String
 
+    /// Restores an app's default icon and removes its cached configuration after success.
+    /// Throws if the app is missing or the icon change fails.
     func run() throws {
         let resolvedApp = resolve(path: appPath)
         let fm = FileManager.default
@@ -679,6 +685,8 @@ struct RestoreCommand: ParsableCommand {
     @Flag(name: .shortAndLong, help: "Show detailed output")
     var verbose = false
 
+    /// Restores eligible cached icons for matching apps, or reports planned changes in dry-run mode.
+    /// Reports individual failures; throws for invalid selection or a Dock refresh failure.
     func run() throws {
         let fm = FileManager.default
         let cached = loadCachedIcons()
@@ -930,6 +938,8 @@ struct ValidateCommand: ParsableCommand {
     @Argument(help: "Path to configuration file (.json)")
     var configPath: String
 
+    /// Validates an exported configuration and prints its summary, icon data size, and warnings.
+    /// Throws if the file is missing or invalid.
     func run() throws {
         let resolvedPath = resolve(path: configPath)
 

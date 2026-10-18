@@ -24,6 +24,8 @@ import Foundation
         isInstalled = FileManager.default.fileExists(atPath: installLocation)
     }
     
+    /// Installs the bundled CLI at `installLocation` without requesting administrator privileges.
+    /// Rejects an existing symbolic link and publishes installation progress or errors.
     func installCLI() {
         isInstalling = true
         lastError = nil
@@ -70,6 +72,8 @@ import Foundation
         }
     }
     
+    /// Removes the CLI at `installLocation` without requesting administrator privileges.
+    /// Rejects symbolic links and publishes completion or errors.
     func uninstallCLI() {
         isInstalling = true
         lastError = nil

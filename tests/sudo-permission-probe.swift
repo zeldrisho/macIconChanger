@@ -2,6 +2,7 @@ import Foundation
 
 @main
 enum SudoPermissionProbeTests {
+    /// Runs sudo probe classification, helper migration, and scoped sudoers rule regressions.
     static func main() {
         assertEqual(
             SudoPermissionProbePolicy.classify(exitStatus: 0, output: ""),

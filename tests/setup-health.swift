@@ -2,6 +2,7 @@ import Foundation
 
 @main
 enum SetupHealthTests {
+    /// Runs setup health, manual-mode access, and notification policy regressions.
     static func main() {
         assertEqual(SetupHealth.ready.statusSymbolName, "app.badge.checkmark.fill")
         assertEqual(SetupHealth.manualMode.statusSymbolName, "exclamationmark.triangle.fill")

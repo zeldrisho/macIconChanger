@@ -528,6 +528,7 @@ struct IconView: View {
         }
     }
 
+    /// Loads the app or folder icon, using the memory cache before background loading.
     private func loadIcon() async {
         if let cached = AppIconCache.shared.cachedIcon(for: app.url) {
             icon = cached
@@ -843,6 +844,7 @@ struct DockPreviewIcon: View {
         .onChange(of: refreshTrigger) { _ in Task { await loadIcon() } }
     }
 
+    /// Loads the Dock preview icon and updates whether the app has a cached custom icon.
     private func loadIcon() async {
         let url = app.url
         let appId = app.id

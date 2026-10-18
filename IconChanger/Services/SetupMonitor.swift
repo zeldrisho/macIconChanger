@@ -19,6 +19,9 @@ final class SetupMonitor: ObservableObject {
 
     private init() {}
 
+    /// Checks folder access and optional helper health, then publishes the latest result.
+    /// Missing or unavailable helpers select manual mode; legacy grants require cleanup.
+    /// The completion runs on the main queue only if this check is still current.
     func check(
         source: DiagnosticsSource = .system,
         completion: ((SetupHealth) -> Void)? = nil

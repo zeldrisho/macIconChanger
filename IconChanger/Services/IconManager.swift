@@ -33,6 +33,7 @@ class IconManager: ObservableObject {
 
     private var refreshTask: Task<Void, Never>?
 
+    /// The protected directory containing the optional privileged helper and icon utility.
     var helperDirectoryURL: URL {
         URL(fileURLWithPath: "/Library/PrivilegedHelperTools/IconChanger", isDirectory: true)
     }
@@ -221,6 +222,8 @@ class IconManager: ObservableObject {
         return appItems
     }
     
+    /// Installs bundled helper files with administrator approval when integrity checks fail.
+    /// Rejects symbolic links at installation paths and logs installation failures.
     func ensureHelperFilesCopied() {
         let diagnosticsContext = DiagnosticsContext(operation: .setup)
         let timer = DiagnosticsTimer()
@@ -493,6 +496,8 @@ class IconManager: ObservableObject {
         )
     }
 
+    /// Removes an app's custom icon and clears its cached and appearance configurations.
+    /// Throws if the icon operation fails.
     func removeIcon(from app: AppItem) throws {
         let appPath = app.url.universalPath()
         let context = DiagnosticsContext(
@@ -535,6 +540,8 @@ class IconManager: ObservableObject {
         }
     }
 
+    /// Caches and applies an image to an app, recording its source in history and diagnostics.
+    /// Throws if caching or applying the image fails.
     func setImage(
         _ image: NSImage,
         app: AppItem,
@@ -610,6 +617,9 @@ class IconManager: ObservableObject {
         }
     }
 
+    /// Applies an icon without updating the persistent icon cache and refreshes the displayed icon.
+    /// The `allowRepair` argument is retained for compatibility and is ignored; protected apps
+    /// use the setup checks in the helper execution path. Throws if applying the icon fails.
     func setIconWithoutCaching(
         _ image: NSImage,
         app: AppItem,
@@ -678,6 +688,9 @@ class IconManager: ObservableObject {
         var failed: [(String, Error)] = []
     }
 
+    /// Restores the best eligible cached icon and optionally refreshes the Dock.
+    /// Returns `false` when no eligible icon exists; throws if restoration fails.
+    /// The `allowRepair` argument is retained for compatibility and is ignored.
     @discardableResult
     func restoreCachedIcon(
         for app: AppItem,
@@ -739,6 +752,9 @@ class IconManager: ObservableObject {
         }
     }
 
+    /// Restores eligible cached and appearance icons for installed apps, then refreshes the Dock.
+    /// Returns counts of restored and missing apps plus individual failures.
+    /// The `allowRepair` argument is retained for compatibility and is ignored.
     func restoreAllCachedIcons(
         allowRepair _: Bool = true,
         source: DiagnosticsSource = .manual
@@ -1225,6 +1241,8 @@ class IconManager: ObservableObject {
         )
     }
 
+    /// Runs an icon operation as the current user for owned, writable apps, or via sudo otherwise.
+    /// Protected targets require completed helper setup. Throws on setup or execution failure.
     private func runHelper(
         arguments: [String],
         operation: String,
@@ -1678,6 +1696,8 @@ class IconManager: ObservableObject {
         }
     }
 
+    /// Checks noninteractive sudo output for grants to either legacy helper location.
+    /// Returns `false` if sudo output cannot be obtained.
     private func legacySudoersRuleIsActive() -> Bool {
         let output: String
         do {
@@ -1704,6 +1724,8 @@ class IconManager: ObservableObject {
         ) || LegacySudoersPolicy.containsPreviousInstalledHelperRule(in: output)
     }
 
+    /// Installs a validated sudoers rule with administrator approval and removes recognized legacy grants.
+    /// Allows the managed compatibility path only when requested; throws on configuration failure.
     func configureSudoers(
         allowManagedCompatibility: Bool = false
     ) throws -> SudoersConfigurationResult {
@@ -2143,6 +2165,7 @@ class IconManager: ObservableObject {
         }
     }
 
+    /// Records setup health, helper ownership, storage access, and cache counts in diagnostics.
     func recordDiagnosticsSnapshot(source: DiagnosticsSource = .manual) {
         let context = DiagnosticsContext(
             operation: .setup,

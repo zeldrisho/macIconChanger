@@ -18,6 +18,7 @@ struct ContentView: View {
     @State private var hasPresentedManualModeAlert = false
     @State private var showPermissionRepairError = false
 
+    /// Displays application browsing or setup guidance for the current setup health.
     var body: some View {
         Group {
             switch setupMonitor.health {
