@@ -19,7 +19,14 @@ if ! git -C "$PROJECT_DIR" diff --quiet ||
 fi
 
 gh auth status >/dev/null
-REPOSITORY="$(git -C "$PROJECT_DIR" remote get-url origin | sed -E 's#.*github.com[:/]([^/]+/[^/.]+)(\.git)?#\1#')"
+ORIGIN_URL="$(git -C "$PROJECT_DIR" remote get-url origin)"
+case "$ORIGIN_URL" in
+    https://github.com/*) REPOSITORY="${ORIGIN_URL#https://github.com/}" ;;
+    git@github.com:*) REPOSITORY="${ORIGIN_URL#git@github.com:}" ;;
+    ssh://git@github.com/*) REPOSITORY="${ORIGIN_URL#ssh://git@github.com/}" ;;
+    *) REPOSITORY="" ;;
+esac
+REPOSITORY="${REPOSITORY%.git}"
 if [[ ! "$REPOSITORY" =~ ^[^/]+/[^/]+$ ]]; then
     echo "Could not determine the GitHub repository from origin." >&2
     exit 1

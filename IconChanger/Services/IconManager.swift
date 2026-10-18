@@ -1290,7 +1290,9 @@ class IconManager: ObservableObject {
             return
         }
 
-        try ensureSetupCompleted()
+        try ensureSetupCompleted(
+            allowRepair: diagnosticsContext.source == .manual
+        )
         let task = Process()
         let outPipe = Pipe()
         let errPipe = Pipe()

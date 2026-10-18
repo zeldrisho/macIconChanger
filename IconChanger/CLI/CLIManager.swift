@@ -15,6 +15,7 @@ import Foundation
     @Published var lastError: String? = nil
     
     private let bundledCLIName = "IconChangerCLI"
+    private let legacyInstallLocation = "/usr/local/bin/iconchanger"
     
     init() {
         checkInstallation()
@@ -22,6 +23,7 @@ import Foundation
     
     func checkInstallation() {
         isInstalled = FileManager.default.fileExists(atPath: installLocation)
+            || FileManager.default.fileExists(atPath: legacyInstallLocation)
     }
     
     /// Installs the bundled CLI at `installLocation` without requesting administrator privileges.
@@ -78,16 +80,18 @@ import Foundation
         isInstalling = true
         lastError = nil
 
-        let location = installLocation
+        let locations = [installLocation, legacyInstallLocation]
         Task.detached {
             do {
-                let destinationURL = URL(fileURLWithPath: location).standardizedFileURL
-                if FileManager.default.fileExists(atPath: destinationURL.path) {
-                    let attributes = try FileManager.default.attributesOfItem(atPath: destinationURL.path)
-                    guard attributes[.type] as? FileAttributeType != .typeSymbolicLink else {
-                        throw NSError(domain: "CLIManager", code: 3, userInfo: [NSLocalizedDescriptionKey: "Refusing to remove a symbolic link at the CLI install location."])
+                for location in locations {
+                    let destinationURL = URL(fileURLWithPath: location).standardizedFileURL
+                    if FileManager.default.fileExists(atPath: destinationURL.path) {
+                        let attributes = try FileManager.default.attributesOfItem(atPath: destinationURL.path)
+                        guard attributes[.type] as? FileAttributeType != .typeSymbolicLink else {
+                            throw NSError(domain: "CLIManager", code: 3, userInfo: [NSLocalizedDescriptionKey: "Refusing to remove a symbolic link at the CLI install location."])
+                        }
+                        try FileManager.default.removeItem(at: destinationURL)
                     }
-                    try FileManager.default.removeItem(at: destinationURL)
                 }
                 
                 await MainActor.run {

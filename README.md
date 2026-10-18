@@ -44,12 +44,12 @@ Setup guides, CLI commands, API configuration, background service, import/export
 
 For a fork build, download a tested candidate from the **Actions run artifacts** or a published DMG from [this fork's Releases](https://github.com/zeldrisho/macIconChanger/releases/latest). Drag `IconChanger.app` to Applications and launch. Ad-hoc signed builds are not notarized, so macOS may show a security warning.
 
-> **Need help?** Check the [Getting Started](https://app.snaix.homes/iconchanger/docs/getting-started) guide, or browse the full [Documentation](https://app.snaix.homes/iconchanger/).
+> **Need help?** Check this fork's [Setup Guide](docs/setup.md), or browse the full [Documentation](https://app.snaix.homes/iconchanger/).
 
 ## System Requirements
 
 - macOS 13.0+
-- Administrator privileges
+- Administrator privileges are needed only for protected targets or operations requiring elevated access.
 
 ## Contributing
 
