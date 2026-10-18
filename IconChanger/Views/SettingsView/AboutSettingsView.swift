@@ -82,7 +82,7 @@ struct AboutSettingsView: View {
                 .help("Click to copy version")
 
             VStack(spacing: 6) {
-                Link("GitHub Repository", destination: URL(string: "https://github.com/Bengerthelorf/macIconChanger")!)
+                Link("GitHub Repository", destination: URL(string: "https://github.com/zeldrisho/macIconChanger")!)
                 Link("macosicons.com", destination: URL(string: "https://macosicons.com")!)
             }
             .font(.callout)
@@ -165,7 +165,7 @@ struct AboutSettingsView: View {
     }
 
     private func fetchAndCacheAvatar() async {
-        guard let url = URL(string: "https://github.com/Bengerthelorf.png?size=64") else { return }
+        guard let url = URL(string: "https://github.com/zeldrisho.png?size=64") else { return }
         do {
             let (data, _) = try await URLSession.shared.data(from: url)
             try Task.checkCancellation()

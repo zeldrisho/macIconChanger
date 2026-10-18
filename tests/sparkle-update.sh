@@ -31,7 +31,7 @@ MARKDOWN
     SPARKLE_DOWNLOAD_URL="https://example.com/IconChanger.dmg" \
     SPARKLE_ED_SIG="test-signature" \
     SPARKLE_DMG_SIZE="1234" \
-    SPARKLE_REPO="Bengerthelorf/macIconChanger" \
+    SPARKLE_REPO="zeldrisho/macIconChanger" \
     python3 update-sparkle.py >/dev/null
 )
 
@@ -42,6 +42,9 @@ python3 "$REPO_ROOT/scripts/validate-appcast.py" \
     "test-signature" \
     "1234" \
     "https://example.com/IconChanger.dmg" >/dev/null
+
+grep -Fq 'https://github.com/zeldrisho/macIconChanger' \
+    "$TEST_DIR/IconChanger/Resources/sparkle.xml"
 
 first_appcast_sha="$(
     shasum -a 256 "$TEST_DIR/IconChanger/Resources/sparkle.xml" |
@@ -56,7 +59,7 @@ first_appcast_sha="$(
     SPARKLE_DOWNLOAD_URL="https://example.com/IconChanger.dmg" \
     SPARKLE_ED_SIG="test-signature" \
     SPARKLE_DMG_SIZE="1234" \
-    SPARKLE_REPO="Bengerthelorf/macIconChanger" \
+    SPARKLE_REPO="zeldrisho/macIconChanger" \
     python3 update-sparkle.py >/dev/null
 )
 
@@ -77,4 +80,17 @@ fi
 grep -Fq '&lt;script&gt;alert(&quot;unsafe&quot;)&lt;/script&gt; &amp;' \
     "$TEST_DIR/IconChanger/Resources/sparkle.xml"
 
-echo "PASS: Sparkle metadata is validated and release notes are escaped"
+python3 - "$REPO_ROOT/IconChanger/Info.plist" <<'PY'
+import plistlib
+import sys
+
+with open(sys.argv[1], "rb") as handle:
+    info = plistlib.load(handle)
+assert info["SUFeedURL"] == (
+    "https://zeldrisho.github.io/macIconChanger/"
+    "IconChanger/Resources/sparkle.xml"
+)
+assert info["SUPublicEDKey"] == "7uEFlIwqAaLM649HZgyKnA8xcPNRFi3qM5rZChxBJX8="
+PY
+
+echo "PASS: fork Sparkle feed, key, and metadata are configured"

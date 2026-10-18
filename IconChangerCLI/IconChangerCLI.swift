@@ -978,10 +978,14 @@ struct ValidateCommand: ParsableCommand {
         print("  Light/Dark:  \(appearanceSlotCount)")
         print("  Settings:    \(config.settings?.count ?? 0)")
 
-        let totalIconSize = config.cachedIcons.reduce(0) { $0 + $1.iconData.count }
-            + config.appearanceIcons.reduce(0) {
-                $0 + ($1.lightIconData?.count ?? 0) + ($1.darkIconData?.count ?? 0)
-            }
+        var totalIconSize = 0
+        for icon in config.cachedIcons {
+            totalIconSize += icon.iconData.count
+        }
+        for appearanceIcon in config.appearanceIcons {
+            totalIconSize += appearanceIcon.lightIconData?.count ?? 0
+            totalIconSize += appearanceIcon.darkIconData?.count ?? 0
+        }
         print("  Icon data:   \(ByteCountFormatter.string(fromByteCount: Int64(totalIconSize), countStyle: .file))")
 
         if !warnings.isEmpty {

@@ -19,24 +19,50 @@ permissions:
 jobs:
   publish:
     name: Promote exact tested candidate
-    runs-on: macos-26
+    runs-on: macos-latest
     environment: release
     steps:
       - name: Require explicit approval
+        env:
+          APPROVAL_INPUT: ${{ inputs.approval }}
         run: |
-          if [[ "${{ inputs.approval }}" != "I_APPROVE_RELEASE" ]]; then
+          if [[ "$APPROVAL_INPUT" != "I_APPROVE_RELEASE" ]]; then
             echo "The approval text did not match I_APPROVE_RELEASE." >&2
             exit 1
           fi
 
       - name: Checkout main
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: main
           fetch-depth: 0
 
+      - name: Verify candidate workflow run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
+        run: |
+          [[ "$CANDIDATE_RUN_ID" =~ ^[0-9]+$ ]] || {
+            echo "Candidate run ID must be numeric." >&2
+            exit 1
+          }
+          EXPECTED_WORKFLOW_ID=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/release-candidate.yml" --jq '.id')
+          RUN_JSON=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$CANDIDATE_RUN_ID")
+          jq -e \
+            --argjson workflow_id "$EXPECTED_WORKFLOW_ID" \
+            --arg repository "$GITHUB_REPOSITORY" \
+            '.workflow_id == $workflow_id and
+             .status == "completed" and
+             .conclusion == "success" and
+             .event == "workflow_dispatch" and
+             .repository.full_name == $repository' \
+            <<< "$RUN_JSON" >/dev/null || {
+              echo "Candidate run is not a successful release-candidate dispatch from this repository." >&2
+              exit 1
+            }
+
       - name: Download tested candidate
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
@@ -77,13 +103,15 @@ jobs:
             "$VERSION" \
             "$BUILD_NUMBER"
 
-          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-          echo "BUILD_NUMBER=$BUILD_NUMBER" >> "$GITHUB_ENV"
-          echo "TAG=$TAG" >> "$GITHUB_ENV"
-          echo "SOURCE_SHA=$SOURCE_SHA" >> "$GITHUB_ENV"
-          echo "DMG_SIZE=$DMG_SIZE" >> "$GITHUB_ENV"
-          echo "ED_SIGNATURE=$ED_SIGNATURE" >> "$GITHUB_ENV"
-          echo "IS_PRERELEASE=$IS_PRERELEASE" >> "$GITHUB_ENV"
+          {
+            echo "VERSION=$VERSION"
+            echo "BUILD_NUMBER=$BUILD_NUMBER"
+            echo "TAG=$TAG"
+            echo "SOURCE_SHA=$SOURCE_SHA"
+            echo "DMG_SIZE=$DMG_SIZE"
+            echo "ED_SIGNATURE=$ED_SIGNATURE"
+            echo "IS_PRERELEASE=$IS_PRERELEASE"
+          } >> "$GITHUB_ENV"
 
       - name: Create immutable tag
         run: |
@@ -174,7 +202,7 @@ jobs:
         run: gh workflow run sparkle-pages.yml --repo "${{ github.repository }}"
 
       - name: Update Homebrew Cask
-        if: env.IS_PRERELEASE != 'true'
+        if: github.repository == 'Bengerthelorf/macIconChanger' && env.IS_PRERELEASE != 'true'
         env:
           GH_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
         run: |

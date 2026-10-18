@@ -18,6 +18,7 @@
 
 ## Key Conventions
 
+- Use `fd` for file discovery and `rg` for searching file contents.
 - Run the relevant `tests/*.sh` wrapper rather than compiling its Swift test file directly; wrappers select the required source files.
 - Register new regression scripts in `tests/run.sh`.
 - Keep independently testable policy logic in `IconChanger/Services/*Policy.swift`, separate from SwiftUI and system side effects.
