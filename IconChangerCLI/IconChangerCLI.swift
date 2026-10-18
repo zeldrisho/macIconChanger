@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import AppKit
 import ArgumentParser
 
 // MARK: - Shared Paths & Constants
@@ -50,8 +51,36 @@ private let appearanceIconsDir: URL = {
 
 private let appearanceMetadataFile = applicationSupportRoot.appendingPathComponent("appearance-icons.json")
 
-private let helperScript = URL(fileURLWithPath: "/usr/local/lib/iconchanger/helper.sh")
-private let fileicon = URL(fileURLWithPath: "/usr/local/lib/iconchanger/fileicon")
+private let helperScript = URL(fileURLWithPath: "/Library/PrivilegedHelperTools/IconChanger/helper.sh")
+private let fileicon = URL(fileURLWithPath: "/Library/PrivilegedHelperTools/IconChanger/fileicon")
+
+private func applyIcon(imagePath: String?, to appPath: String) throws {
+    let fm = FileManager.default
+    let attributes = try? fm.attributesOfItem(atPath: appPath)
+    let owner = (attributes?[.ownerAccountID] as? NSNumber)?.intValue
+    if owner == Int(getuid()), fm.isWritableFile(atPath: appPath) {
+        let image: NSImage?
+        if let imagePath {
+            guard let loaded = NSImage(contentsOfFile: imagePath) else {
+                throw CLIError.fileNotFound("Could not read image: \(imagePath)")
+            }
+            image = loaded
+        } else {
+            image = nil
+        }
+        guard NSWorkspace.shared.setIcon(image, forFile: appPath, options: []) else {
+            throw CLIError.iconSetFailed("macOS could not change the icon without elevated privileges.")
+        }
+        return
+    }
+
+    guard fm.fileExists(atPath: helperScript.path), fm.fileExists(atPath: fileicon.path) else {
+        throw CLIError.setupIncomplete("This app requires the optional privileged helper. Run IconChanger's permission setup for protected targets.")
+    }
+    let operation = imagePath.map { "'\(fileicon.path.shellEscaped)' '\(appPath.shellEscaped)' '\($0.shellEscaped)'" }
+        ?? "--remove '\(fileicon.path.shellEscaped)' '\(appPath.shellEscaped)'"
+    try shell("sudo -n '\(helperScript.path.shellEscaped)' \(operation)")
+}
 
 /// Idempotent one-time migration from legacy `~/.iconchanger/` layout.
 /// Kept in sync with the GUI app's `AppPaths.migrateLegacyDirectoryIfNeeded()`.
@@ -597,19 +626,10 @@ struct SetIconCommand: ParsableCommand {
             throw ValidationError("Target must be an .app bundle: \(resolvedApp)")
         }
 
-        // Check setup
-        guard fm.fileExists(atPath: helperScript.path),
-              fm.fileExists(atPath: fileicon.path) else {
-            throw CLIError.setupIncomplete("Helper files not found. Run the IconChanger app to complete setup first.")
-        }
-
-        // Run helper
-        let command = "sudo -n '\(helperScript.path.shellEscaped)' '\(fileicon.path.shellEscaped)' '\(resolvedApp.shellEscaped)' '\(resolvedIcon.shellEscaped)'"
-
         do {
-            try shell(command)
+            try applyIcon(imagePath: resolvedIcon, to: resolvedApp)
         } catch {
-            throw CLIError.iconSetFailed("Failed to set icon: \(error.localizedDescription)\n\nMake sure sudoers is configured. Run the IconChanger app to set up permissions.")
+            throw CLIError.iconSetFailed("Failed to set icon: \(error.localizedDescription)")
         }
 
         print("✓ Icon set successfully on \(URL(fileURLWithPath: resolvedApp).lastPathComponent)")
@@ -634,14 +654,7 @@ struct RemoveIconCommand: ParsableCommand {
         guard fm.fileExists(atPath: resolvedApp) else {
             throw CLIError.fileNotFound("App not found: \(resolvedApp)")
         }
-        guard fm.fileExists(atPath: helperScript.path),
-              fm.fileExists(atPath: fileicon.path) else {
-            throw CLIError.setupIncomplete(
-                "Helper files not found. Run the IconChanger app to complete setup first."
-            )
-        }
-        let command = "sudo -n '\(helperScript.path.shellEscaped)' --remove '\(fileicon.path.shellEscaped)' '\(resolvedApp.shellEscaped)'"
-        try shell(command)
+        try applyIcon(imagePath: nil, to: resolvedApp)
         removeCachedConfiguration(for: resolvedApp)
 
         let appName = URL(fileURLWithPath: resolvedApp).deletingPathExtension().lastPathComponent
@@ -677,12 +690,6 @@ struct RestoreCommand: ParsableCommand {
         guard !allPaths.isEmpty else {
             print("No cached icons to restore.")
             return
-        }
-
-        // Check setup
-        guard fm.fileExists(atPath: helperScript.path),
-              fm.fileExists(atPath: fileicon.path) else {
-            throw CLIError.setupIncomplete("Helper files not found. Run the IconChanger app to complete setup first.")
         }
 
         let selectedPaths: [String]
@@ -738,10 +745,8 @@ struct RestoreCommand: ParsableCommand {
                 continue
             }
 
-            let command = "sudo -n '\(helperScript.path.shellEscaped)' '\(fileicon.path.shellEscaped)' '\(appPath.shellEscaped)' '\(iconFile.path.shellEscaped)'"
-
             do {
-                try shell(command)
+                try applyIcon(imagePath: iconFile.path, to: appPath)
                 if verbose { print("  ✓ \(appName)") }
                 success += 1
             } catch {

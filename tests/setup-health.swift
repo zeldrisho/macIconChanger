@@ -30,6 +30,24 @@ enum SetupHealthTests {
             contentsOfFile: "IconChanger/App/ContentView.swift",
             encoding: .utf8
         )
+        let setupMonitorSource = try! String(
+            contentsOfFile: "IconChanger/Services/SetupMonitor.swift",
+            encoding: .utf8
+        )
+        precondition(
+            setupMonitorSource.contains("case .helperFilesMissing(_), .helperFilesOutdated, .sudoersPermissionMissing") &&
+                setupMonitorSource.contains("result = .manualMode"),
+            "missing or unavailable privileged helpers must not block normal app use"
+        )
+        let iconManagerSource = try! String(
+            contentsOfFile: "IconChanger/Services/IconManager.swift",
+            encoding: .utf8
+        )
+        precondition(
+            iconManagerSource.contains("if targetOwner == callerUID && targetIsWritable") &&
+                iconManagerSource.contains("details: [\"authorization_mode\": \"current_user\"]"),
+            "writable apps must use the current-user icon path"
+        )
         precondition(
             contentViewSource.contains(".onChange(of: setupMonitor.health)"),
             "manual mode alerts must observe the shared health state instead of relying on one check completion"

@@ -4,6 +4,11 @@
 //
 
 import SwiftUI
+import AppKit
+
+private struct SendableIconImage: @unchecked Sendable {
+    let image: NSImage
+}
 
 enum AppFilter: String, CaseIterable, Identifiable {
     case all = "All"
@@ -530,12 +535,12 @@ struct IconView: View {
         }
         let url = app.url
         let loaded = await Task.detached(priority: .userInitiated) {
-            if isFolder {
-                return NSWorkspace.shared.icon(forFile: url.path)
-            }
-            return AppIconCache.shared.icon(for: url)
+            let image = isFolder
+                ? NSWorkspace.shared.icon(forFile: url.path)
+                : AppIconCache.shared.icon(for: url)
+            return SendableIconImage(image: image)
         }.value
-        icon = loaded
+        icon = loaded.image
     }
 }
 
@@ -847,11 +852,11 @@ struct DockPreviewIcon: View {
             return
         }
         let (loaded, isCached) = await Task.detached(priority: .userInitiated) {
-            let img = AppIconCache.shared.icon(for: url)
+            let image = AppIconCache.shared.icon(for: url)
             let cached = IconCacheManager.shared.getIconCache(for: appId) != nil
-            return (img, cached)
+            return (SendableIconImage(image: image), cached)
         }.value
-        icon = loaded
+        icon = loaded.image
         hasCustom = isCached
     }
 }

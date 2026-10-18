@@ -5,23 +5,19 @@ order: 2
 ---
 
 
-IconChanger needs administrator privileges to change application icons. On first launch, the app offers to set this up automatically.
+IconChanger changes icons on apps you own and can write to without administrator privileges. macOS may separately require App Management permission for some targets. IconChanger uses its privileged helper only when an operation cannot be performed as your user.
 
-## Automatic Setup (Recommended)
+## Optional privileged setup
 
-1. Launch IconChanger.
-2. Click the **Setup** button when prompted.
-3. Enter your administrator password.
-
-The app will install a helper script to `/usr/local/lib/iconchanger/` (owned by `root:wheel`) and configure a scoped sudoers rule so it can run without a password prompt each time.
+The helper in `/Library/PrivilegedHelperTools/IconChanger/` and its scoped sudoers rule are only needed for protected targets or background operations that require elevated access. You can use IconChanger for user-writable apps without installing the helper. Never add a broad `ALL ALL=(ALL) NOPASSWD` rule; use the app's setup flow if you choose to configure the helper.
 
 ## Security
 
 IconChanger uses several security measures to protect the helper pipeline:
 
-- **Root-owned helper directory** — The helper files live in `/usr/local/lib/iconchanger/` with `root:wheel` ownership, preventing unprivileged modification.
-- **SHA-256 integrity verification** — The helper script is verified against a known hash before every execution.
-- **Scoped sudoers rule** — The sudoers entry only grants passwordless access to the specific helper script, not arbitrary commands.
+- **No elevation for writable apps** — User-owned writable apps are changed using the bundled icon utility under your account.
+- **Optional privileged helper** — Protected-target operations may require setup and administrator authorization. Keep this disabled unless you need that functionality.
+- **Integrity checks** — When the privileged helper is used, installed helper files are checked against the bundled files.
 - **Audit logging** — Successful icon changes and restores are appended to
   `~/Library/Application Support/com.zhuhaoyu.IconChanger/audit.log`.
 - **Developer diagnostics** — After enabling Developer Mode, open the
@@ -38,22 +34,9 @@ timings. The file is owner-only (`0600`), rotates at 5 MiB, and retains three
 archives. Developer Mode and **Enable Diagnostics Log** must both remain
 enabled for diagnostics to be written.
 
-## Manual Setup
+## Manual setup
 
-If automatic setup fails, you can configure it manually:
-
-1. Open Terminal.
-2. Run:
-
-```bash
-sudo visudo -f /etc/sudoers.d/iconchanger
-```
-
-3. Add the following line:
-
-```
-ALL ALL=(ALL) NOPASSWD: /usr/local/lib/iconchanger/helper.sh
-```
+Do not create a broad passwordless sudoers rule manually. If you need protected-target support, use the app's permission setup flow and review the exact user-scoped rule it manages.
 
 ## Verifying Setup
 

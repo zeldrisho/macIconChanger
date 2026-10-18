@@ -34,7 +34,7 @@ class IconManager: ObservableObject {
     private var refreshTask: Task<Void, Never>?
 
     var helperDirectoryURL: URL {
-        URL(fileURLWithPath: "/usr/local/lib/iconchanger", isDirectory: true)
+        URL(fileURLWithPath: "/Library/PrivilegedHelperTools/IconChanger", isDirectory: true)
     }
 
     var helperScriptURL: URL {
@@ -267,7 +267,13 @@ class IconManager: ObservableObject {
 
         let esc = { (s: String) -> String in s.shellEscaped }
         let commands = [
+            "test ! -L /Library/PrivilegedHelperTools",
+            "mkdir -p /Library/PrivilegedHelperTools",
+            "chown root:wheel /Library/PrivilegedHelperTools",
+            "chmod 755 /Library/PrivilegedHelperTools",
+            "test ! -L '\(esc(helperDir))'",
             "mkdir -p '\(esc(helperDir))'",
+            "test ! -L '\(esc(fileiconDst))' && test ! -L '\(esc(helperDst))'",
             "cp '\(esc(fileiconBundlePath))' '\(esc(fileiconDst))'",
             "cp '\(esc(helperBundlePath))' '\(esc(helperDst))'",
             "chown root:wheel '\(esc(helperDir))' '\(esc(fileiconDst))' '\(esc(helperDst))'",
@@ -499,9 +505,6 @@ class IconManager: ObservableObject {
         diagnostics.log(.operation, phase: "remove.start", context: context)
 
         do {
-            diagnostics.log(.step, phase: "setup_check.start", context: context)
-            try ensureSetupCompleted()
-            diagnostics.log(.step, phase: "setup_check.finish", context: context)
             try runHelperRemove(appPath: appPath, diagnosticsContext: context)
 
             IconCacheManager.shared.removeCachedIcon(for: appPath)
@@ -571,9 +574,6 @@ class IconManager: ObservableObject {
             )
             logger.log("Icon cached for \(app.name)")
 
-            diagnostics.log(.step, phase: "setup_check.start", context: context)
-            try ensureSetupCompleted()
-            diagnostics.log(.step, phase: "setup_check.finish", context: context)
             try applyIcon(image, to: app, diagnosticsContext: context)
 
             auditLog(operation: "set_icon", appName: app.name, appPath: appPath)
@@ -613,7 +613,7 @@ class IconManager: ObservableObject {
     func setIconWithoutCaching(
         _ image: NSImage,
         app: AppItem,
-        allowRepair: Bool = true,
+        allowRepair _: Bool = true,
         diagnosticsOperation: DiagnosticsOperation = .restore,
         diagnosticsSource: DiagnosticsSource = .manual,
         diagnosticsIconKind: String? = nil,
@@ -638,9 +638,6 @@ class IconManager: ObservableObject {
         )
 
         do {
-            diagnostics.log(.step, phase: "setup_check.start", context: context)
-            try ensureSetupCompleted(allowRepair: allowRepair)
-            diagnostics.log(.step, phase: "setup_check.finish", context: context)
             try applyIcon(image, to: app, diagnosticsContext: context)
 
             await MainActor.run {
@@ -684,7 +681,7 @@ class IconManager: ObservableObject {
     @discardableResult
     func restoreCachedIcon(
         for app: AppItem,
-        allowRepair: Bool = true,
+        allowRepair _: Bool = true,
         refreshDock: Bool = true,
         source: DiagnosticsSource = .manual
     ) async throws -> Bool {
@@ -698,9 +695,6 @@ class IconManager: ObservableObject {
         diagnostics.log(.operation, phase: "restore.start", context: context)
 
         do {
-            diagnostics.log(.step, phase: "setup_check.start", context: context)
-            try ensureSetupCompleted(allowRepair: allowRepair)
-            diagnostics.log(.step, phase: "setup_check.finish", context: context)
             guard
                 let restoredContext = try applyBestCachedIcon(
                     for: app,
@@ -746,7 +740,7 @@ class IconManager: ObservableObject {
     }
 
     func restoreAllCachedIcons(
-        allowRepair: Bool = true,
+        allowRepair _: Bool = true,
         source: DiagnosticsSource = .manual
     ) async throws -> RestoreResult {
         let batchID = UUID()
@@ -758,21 +752,6 @@ class IconManager: ObservableObject {
         let batchTimer = DiagnosticsTimer()
         logger.log("Starting restoreAllCachedIcons...")
         diagnostics.log(.operation, phase: "restore_batch.start", context: batchContext)
-
-        do {
-            diagnostics.log(.step, phase: "setup_check.start", context: batchContext)
-            try ensureSetupCompleted(allowRepair: allowRepair)
-            diagnostics.log(.step, phase: "setup_check.finish", context: batchContext)
-        } catch {
-            diagnostics.log(
-                .failure,
-                phase: "restore_batch.setup_failed",
-                context: batchContext,
-                durationMilliseconds: batchTimer.elapsedMilliseconds,
-                details: DiagnosticsLogger.errorDetails(error)
-            )
-            throw error
-        }
 
         let cachedIcons = IconCacheManager.shared.getAllCachedIcons()
         let appearanceConfigurations = AppearanceIconStore.shared.getAllConfigurations()
@@ -1254,7 +1233,46 @@ class IconManager: ObservableObject {
     ) throws {
         let helperToolPath = self.helperScriptURL.path
         let helperTimer = DiagnosticsTimer()
+        let targetAttributes = try? FileManager.default.attributesOfItem(atPath: appPath)
+        let targetOwner = (targetAttributes?[.ownerAccountID] as? NSNumber)?.intValue
+        let targetIsWritable = FileManager.default.isWritableFile(atPath: appPath)
+        let callerUID = Int(getuid())
 
+        // User-owned, writable apps do not need the privileged helper or its sudoers setup.
+        if targetOwner == callerUID && targetIsWritable {
+            guard let bundledFileicon = Bundle.main.url(forResource: "fileicon", withExtension: nil) else {
+                throw NSError(
+                    domain: "IconManager",
+                    code: 18,
+                    userInfo: [NSLocalizedDescriptionKey: "The bundled icon utility is missing."]
+                )
+            }
+            do {
+                _ = try Self.runProcess(
+                    executableURL: bundledFileicon,
+                    arguments: operation == "remove"
+                        ? ["rm", appPath]
+                        : ["set", appPath, arguments.last ?? ""],
+                    timeout: 15.0
+                )
+            } catch {
+                throw NSError(
+                    domain: "IconManager",
+                    code: 17,
+                    userInfo: [NSLocalizedDescriptionKey: "Could not change this app's icon without elevated privileges: \(error.localizedDescription)"]
+                )
+            }
+            diagnostics.log(
+                .performance,
+                phase: "helper.finish",
+                context: diagnosticsContext,
+                durationMilliseconds: helperTimer.elapsedMilliseconds,
+                details: ["authorization_mode": "current_user"]
+            )
+            return
+        }
+
+        try ensureSetupCompleted()
         let task = Process()
         let outPipe = Pipe()
         let errPipe = Pipe()
@@ -1673,7 +1691,7 @@ class IconManager: ObservableObject {
                 return LegacySudoersPolicy.containsLegacyRule(
                     in: commandOutput,
                     homeDirectory: FileManager.default.homeDirectoryForCurrentUser.path
-                )
+                ) || LegacySudoersPolicy.containsPreviousInstalledHelperRule(in: commandOutput)
             }
             return false
         } catch {
@@ -1683,7 +1701,7 @@ class IconManager: ObservableObject {
         return LegacySudoersPolicy.containsLegacyRule(
             in: output,
             homeDirectory: FileManager.default.homeDirectoryForCurrentUser.path
-        )
+        ) || LegacySudoersPolicy.containsPreviousInstalledHelperRule(in: output)
     }
 
     func configureSudoers(
@@ -1741,6 +1759,9 @@ class IconManager: ObservableObject {
         let legacyLines = LegacySudoersPolicy.exactLegacyLines(
             username: username,
             homeDirectory: homeDirectory
+        )
+        let previousHelperLines = LegacySudoersPolicy.previousInstalledHelperLines(
+            username: username
         )
         let legacyFileiconPath = "\(homeDirectory)/.iconchanger/fileicon"
         let compatibilityFlag = allowManagedCompatibility ? "1" : "0"
@@ -1800,6 +1821,10 @@ class IconManager: ObservableObject {
         RULE_TMP=$(/usr/bin/mktemp /private/etc/sudoers.d/iconchanger.XXXXXX)
         MAIN_TMP=$(/usr/bin/mktemp /private/etc/sudoers.iconchanger.XXXXXX)
 
+        [ -d /Library/PrivilegedHelperTools ] && [ ! -L /Library/PrivilegedHelperTools ]
+        [ "$(/usr/bin/stat -f '%Su:%Sg:%Lp' /Library/PrivilegedHelperTools)" = 'root:wheel:755' ]
+        [ -d "$(/usr/bin/dirname "$HELPER")" ] && [ ! -L "$(/usr/bin/dirname "$HELPER")" ]
+        [ "$(/usr/bin/stat -f '%Su:%Sg:%Lp' "$(/usr/bin/dirname "$HELPER")")" = 'root:wheel:755' ]
         [ -f "$HELPER" ] && [ ! -L "$HELPER" ]
         [ -f "$FILEICON" ] && [ ! -L "$FILEICON" ]
         [ "$(/usr/bin/stat -f '%Su:%Sg:%Lp' "$HELPER")" = 'root:wheel:755' ]
@@ -1815,13 +1840,18 @@ class IconManager: ObservableObject {
         /usr/bin/awk \
           -v old_all='\(legacyLines[0].shellEscaped)' \
           -v old_user='\(legacyLines[1].shellEscaped)' \
+          -v old_previous_global='\(previousHelperLines[0].shellEscaped)' \
+          -v old_previous_user='\(previousHelperLines[1].shellEscaped)' \
+          -v old_previous_root_user='\(previousHelperLines[2].shellEscaped)' \
           -v block_begin='\(SudoersRulePolicy.managedBlockBegin)' \
           -v block_end='\(SudoersRulePolicy.managedBlockEnd)' \
           'BEGIN { skip = 0 }
            $0 == block_begin { skip = 1; next }
            $0 == block_end { skip = 0; next }
            skip == 1 { next }
-           $0 != old_all && $0 != old_user { print }' \
+           $0 != old_all && $0 != old_user &&
+           $0 != old_previous_global && $0 != old_previous_user &&
+           $0 != old_previous_root_user { print }' \
           /private/etc/sudoers > "$MAIN_TMP"
         /bin/chmod 0440 "$MAIN_TMP"
         /usr/sbin/chown root:wheel "$MAIN_TMP"
@@ -2135,7 +2165,6 @@ class IconManager: ObservableObject {
             atPath: fileiconURL.path
         )
         let setupStatus = checkSetupStatus(diagnosticsContext: context)
-        let appManagement = appManagementStatus()
 
         #if arch(arm64)
         let architecture = "arm64"
@@ -2147,7 +2176,6 @@ class IconManager: ObservableObject {
 
         var details: [String: String] = [
             "setup_status": diagnosticName(for: setupStatus),
-            "app_management_status": diagnosticName(for: appManagement),
             "folder_permission_count": String(FolderPermission.shared.permissions.count),
             "icon_cache_count": String(IconCacheManager.shared.getCachedIconsCount()),
             "application_support_writable": String(
@@ -2224,84 +2252,6 @@ class IconManager: ObservableObject {
         }
     }
 
-    private func diagnosticName(for status: AppManagementStatus) -> String {
-        switch status {
-        case .authorized:
-            return "authorized"
-        case .denied:
-            return "denied"
-        case .notDetermined:
-            return "not_determined"
-        case .unknown:
-            return "unknown"
-        }
-    }
-
-    // MARK: - App Management (TCC) Permission
-
-    private static let tccHandle: UnsafeMutableRawPointer? = {
-        dlopen("/System/Library/PrivateFrameworks/TCC.framework/Versions/A/TCC", RTLD_NOW)
-    }()
-
-    private static let tccPreflight: (@convention(c) (CFString, CFDictionary?) -> Int)? = {
-        guard let handle = tccHandle, let sym = dlsym(handle, "TCCAccessPreflight") else { return nil }
-        return unsafeBitCast(sym, to: (@convention(c) (CFString, CFDictionary?) -> Int).self)
-    }()
-
-    private static let tccRequest: (@convention(c) (CFString, CFDictionary?, @escaping (Bool) -> Void) -> Void)? = {
-        guard let handle = tccHandle, let sym = dlsym(handle, "TCCAccessRequest") else { return nil }
-        return unsafeBitCast(sym, to: (@convention(c) (CFString, CFDictionary?, @escaping (Bool) -> Void) -> Void).self)
-    }()
-
-    private static let tccServiceAppBundles = "kTCCServiceSystemPolicyAppBundles" as CFString
-
-    enum AppManagementStatus {
-        case authorized, denied, notDetermined, unknown
-    }
-
-    func appManagementStatus() -> AppManagementStatus {
-        guard Bundle.main.bundlePath.hasPrefix("/Applications/") else { return .authorized }
-        guard let preflight = Self.tccPreflight else { return .unknown }
-
-        // 0 = authorized, 1 = denied, 2 = not determined
-        switch preflight(Self.tccServiceAppBundles, nil) {
-        case 0: return .authorized
-        case 1: return .denied
-        case 2: return .notDetermined
-        default: return .unknown
-        }
-    }
-
-    // Triggers the system TCC prompt if status is notDetermined.
-    func requestAppManagementPermission(completion: @escaping (Bool) -> Void) {
-        let context = DiagnosticsContext(operation: .permission)
-        let timer = DiagnosticsTimer()
-        diagnostics.log(
-            .operation,
-            phase: "app_management_request.start",
-            context: context
-        )
-        guard let request = Self.tccRequest else {
-            diagnostics.log(
-                .failure,
-                phase: "app_management_request.unavailable",
-                context: context,
-                durationMilliseconds: timer.elapsedMilliseconds
-            )
-            completion(false)
-            return
-        }
-        request(Self.tccServiceAppBundles, nil) { granted in
-            DiagnosticsLogger.shared.log(
-                granted ? .operation : .failure,
-                phase: "app_management_request.completed",
-                context: context,
-                durationMilliseconds: timer.elapsedMilliseconds,
-                details: ["granted": String(granted)]
-            )
-            DispatchQueue.main.async { completion(granted) }
-        }
-    }
 }
 
 extension LaunchPadManagerDBHelper.AppInfo: @retroactive Identifiable {

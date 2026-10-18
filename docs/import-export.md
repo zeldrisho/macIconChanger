@@ -75,8 +75,9 @@ cp -R /Volumes/IconChanger/IconChanger.app /Applications/
 hdiutil detach /Volumes/IconChanger
 
 # Install CLI (from the app bundle)
-sudo cp /Applications/IconChanger.app/Contents/Resources/IconChangerCLI /usr/local/bin/iconchanger
-sudo chmod +x /usr/local/bin/iconchanger
+mkdir -p ~/.local/bin
+cp /Applications/IconChanger.app/Contents/Resources/IconChangerCLI ~/.local/bin/iconchanger
+chmod +x ~/.local/bin/iconchanger
 
 # Import your icon configuration
 iconchanger import ~/dotfiles/iconchanger/config.json

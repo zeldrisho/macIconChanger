@@ -11,7 +11,8 @@ IconChanger includes a command-line interface for scripting and automation.
 
 1. Open IconChanger > **Settings** > **Advanced**.
 2. Under **Command Line Tool**, click **Install**.
-3. Enter your administrator password.
+
+The command is installed in `~/.local/bin` and does not require administrator privileges.
 
 The `iconchanger` command is now available in your terminal.
 
@@ -20,8 +21,9 @@ The `iconchanger` command is now available in your terminal.
 If you prefer to install manually (e.g., in a dotfiles script):
 
 ```bash
-sudo cp /Applications/IconChanger.app/Contents/Resources/IconChangerCLI /usr/local/bin/iconchanger
-sudo chmod +x /usr/local/bin/iconchanger
+mkdir -p ~/.local/bin
+cp /Applications/IconChanger.app/Contents/Resources/IconChangerCLI ~/.local/bin/iconchanger
+chmod +x ~/.local/bin/iconchanger
 ```
 
 ## Verify Installation
@@ -37,7 +39,7 @@ From the app: **Settings** > **Advanced** > **Uninstall**.
 Or manually:
 
 ```bash
-sudo rm /usr/local/bin/iconchanger
+rm ~/.local/bin/iconchanger
 ```
 
 ## Next Steps

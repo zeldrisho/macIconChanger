@@ -49,8 +49,24 @@ enum SudoersRulePolicy {
 }
 
 enum LegacySudoersPolicy {
+    static let previousInstalledHelperPath = "/usr/local/lib/iconchanger/helper.sh"
+
     static func legacyHelperPath(homeDirectory: String) -> String {
         "\(homeDirectory)/.iconchanger/helper.sh"
+    }
+
+    static func containsPreviousInstalledHelperRule(in sudoListOutput: String) -> Bool {
+        sudoListOutput.split(whereSeparator: \.isNewline).contains { line in
+            line.contains("NOPASSWD:") && line.contains(previousInstalledHelperPath)
+        }
+    }
+
+    static func previousInstalledHelperLines(username: String) -> [String] {
+        [
+            "ALL ALL=(ALL) NOPASSWD: \(previousInstalledHelperPath)",
+            "\(username) ALL=(ALL) NOPASSWD: \(previousInstalledHelperPath)",
+            "\(username) ALL=(root) NOPASSWD: \(previousInstalledHelperPath)",
+        ]
     }
 
     static func containsLegacyRule(in sudoListOutput: String, homeDirectory: String) -> Bool {

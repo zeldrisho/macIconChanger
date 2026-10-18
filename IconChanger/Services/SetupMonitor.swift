@@ -64,36 +64,21 @@ final class SetupMonitor: ObservableObject {
                 diagnosticsContext: diagnosticsContext
             )
             let result: SetupHealth
-            var details = [
+            let details = [
                 "setup_status": Self.setupStatusName(setupStatus)
             ]
 
             switch setupStatus {
             case .completed:
-                let appManagementStatus = iconManager.appManagementStatus()
-                details["app_management_status"] =
-                    Self.appManagementStatusName(appManagementStatus)
-                switch appManagementStatus {
-                case .authorized, .unknown:
-                    result = .ready
-                case .denied, .notDetermined:
-                    result = .needsAppManagementPermission
-                }
-            case .helperFilesMissing(let missingFiles):
-                result = .missingHelperFiles(missingFiles)
-            case .helperFilesOutdated:
-                result = .outdatedHelperFiles
-            case .sudoersPermissionMissing:
-                let appManagementStatus = iconManager.appManagementStatus()
-                details["app_management_status"] =
-                    Self.appManagementStatusName(appManagementStatus)
-                switch appManagementStatus {
-                case .authorized, .unknown:
-                    result = .manualMode
-                case .denied, .notDetermined:
-                    result = .needsAppManagementPermission
-                }
+                // Let macOS enforce App Management consent when an operation actually needs it.
+                result = .ready
+            case .helperFilesMissing(_), .helperFilesOutdated, .sudoersPermissionMissing:
+                // Browsing and user-writable app changes do not require the privileged helper.
+                // Keep background automation paused until the optional helper is healthy.
+                result = .manualMode
             case .legacySudoersPermissionPresent:
+                // A stale user-writable NOPASSWD helper can grant persistent root access.
+                // Require cleanup before proceeding, even for current-user operations.
                 result = .needsLegacyPermissionCleanup
             case .unknownError(let message):
                 result = .error(message)
@@ -145,18 +130,4 @@ final class SetupMonitor: ObservableObject {
         }
     }
 
-    nonisolated private static func appManagementStatusName(
-        _ status: IconManager.AppManagementStatus
-    ) -> String {
-        switch status {
-        case .authorized:
-            return "authorized"
-        case .denied:
-            return "denied"
-        case .notDetermined:
-            return "not_determined"
-        case .unknown:
-            return "unknown"
-        }
-    }
 }
