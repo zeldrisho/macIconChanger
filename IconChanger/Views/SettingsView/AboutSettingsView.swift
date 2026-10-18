@@ -30,6 +30,7 @@ struct AboutSettingsView: View {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "Unknown"
     }
 
+    /// Displays application details, update controls, and project links.
     var body: some View {
         VStack(spacing: 16) {
             Spacer()
@@ -82,7 +83,7 @@ struct AboutSettingsView: View {
                 .help("Click to copy version")
 
             VStack(spacing: 6) {
-                Link("GitHub Repository", destination: URL(string: "https://github.com/Bengerthelorf/macIconChanger")!)
+                Link("GitHub Repository", destination: URL(string: "https://github.com/zeldrisho/macIconChanger")!)
                 Link("macosicons.com", destination: URL(string: "https://macosicons.com")!)
             }
             .font(.callout)
@@ -164,8 +165,10 @@ struct AboutSettingsView: View {
         return Date().timeIntervalSince(modified) >= cacheMaxAge
     }
 
+    /// Downloads the repository owner's avatar and updates memory, disk, and displayed caches.
+    /// Leaves the current avatar unchanged if the download fails or is cancelled.
     private func fetchAndCacheAvatar() async {
-        guard let url = URL(string: "https://github.com/Bengerthelorf.png?size=64") else { return }
+        guard let url = URL(string: "https://github.com/zeldrisho.png?size=64") else { return }
         do {
             let (data, _) = try await URLSession.shared.data(from: url)
             try Task.checkCancellation()

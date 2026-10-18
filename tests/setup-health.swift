@@ -2,6 +2,7 @@ import Foundation
 
 @main
 enum SetupHealthTests {
+    /// Runs setup health, manual-mode access, and notification policy regressions.
     static func main() {
         assertEqual(SetupHealth.ready.statusSymbolName, "app.badge.checkmark.fill")
         assertEqual(SetupHealth.manualMode.statusSymbolName, "exclamationmark.triangle.fill")
@@ -29,6 +30,24 @@ enum SetupHealthTests {
         let contentViewSource = try! String(
             contentsOfFile: "IconChanger/App/ContentView.swift",
             encoding: .utf8
+        )
+        let setupMonitorSource = try! String(
+            contentsOfFile: "IconChanger/Services/SetupMonitor.swift",
+            encoding: .utf8
+        )
+        precondition(
+            setupMonitorSource.contains("case .helperFilesMissing(_), .helperFilesOutdated, .sudoersPermissionMissing") &&
+                setupMonitorSource.contains("result = .manualMode"),
+            "missing or unavailable privileged helpers must not block normal app use"
+        )
+        let iconManagerSource = try! String(
+            contentsOfFile: "IconChanger/Services/IconManager.swift",
+            encoding: .utf8
+        )
+        precondition(
+            iconManagerSource.contains("if targetOwner == callerUID && targetIsWritable") &&
+                iconManagerSource.contains("details: [\"authorization_mode\": \"current_user\"]"),
+            "writable apps must use the current-user icon path"
         )
         precondition(
             contentViewSource.contains(".onChange(of: setupMonitor.health)"),

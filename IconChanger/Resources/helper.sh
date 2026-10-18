@@ -40,7 +40,7 @@ for p in "$APP_PATH" "$IMAGE_PATH"; do
     esac
 done
 
-EXPECTED_DIR="/usr/local/lib/iconchanger"
+EXPECTED_DIR="/Library/PrivilegedHelperTools/IconChanger"
 case "$FILEICON_PATH" in
     "$EXPECTED_DIR"/fileicon) ;;
     *)

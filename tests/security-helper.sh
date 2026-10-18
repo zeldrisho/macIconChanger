@@ -24,7 +24,7 @@ fi
 set +e
 OUTPUT="$(
     bash "$HELPER_UNDER_TEST" \
-        "/usr/local/lib/iconchanger/fileicon" \
+        "/Library/PrivilegedHelperTools/IconChanger/fileicon" \
         $'/Applications/Example.app\nmalicious' \
         "/tmp/icon.png" 2>&1
 )"
@@ -42,6 +42,19 @@ if [[ "$OUTPUT" != *"path contains control characters"* ]]; then
     exit 1
 fi
 
+set +e
+OLD_PATH_OUTPUT="$(bash "$HELPER_UNDER_TEST" \
+    "/usr/local/lib/iconchanger/fileicon" \
+    "/Applications/Example.app" \
+    "/tmp/icon.png" 2>&1)"
+OLD_PATH_STATUS=$?
+set -e
+if [[ $OLD_PATH_STATUS -eq 0 || "$OLD_PATH_OUTPUT" != *"fileicon path is not in the expected directory"* ]]; then
+    echo "FAIL: helper migration must reject the previous install location" >&2
+    printf '%s\n' "$OLD_PATH_OUTPUT" >&2
+    exit 1
+fi
+
 TEST_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/iconchanger-helper-test.XXXXXX")"
 trap 'rm -rf "$TEST_ROOT"' EXIT
 
@@ -50,7 +63,7 @@ TARGET_APP="$TEST_ROOT/Example.app"
 CAPTURE_FILE="$TEST_ROOT/fileicon-arguments"
 TEST_HELPER="$TEST_ROOT/helper.sh"
 mkdir -p "$TARGET_APP"
-sed "s|EXPECTED_DIR=\"/usr/local/lib/iconchanger\"|EXPECTED_DIR=\"$TEST_ROOT\"|" \
+sed "s|EXPECTED_DIR=\"/Library/PrivilegedHelperTools/IconChanger\"|EXPECTED_DIR=\"$TEST_ROOT\"|" \
     "$HELPER_UNDER_TEST" > "$TEST_HELPER"
 cat > "$FAKE_FILEICON" <<'EOF'
 #!/bin/bash

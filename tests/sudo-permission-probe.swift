@@ -2,6 +2,7 @@ import Foundation
 
 @main
 enum SudoPermissionProbeTests {
+    /// Runs sudo probe classification, helper migration, and scoped sudoers rule regressions.
     static func main() {
         assertEqual(
             SudoPermissionProbePolicy.classify(exitStatus: 0, output: ""),
@@ -47,6 +48,21 @@ enum SudoPermissionProbeTests {
                 homeDirectory: "/Users/snaix"
             )
         )
+        precondition(
+            LegacySudoersPolicy.containsPreviousInstalledHelperRule(
+                in: "User snaix may run:\\n    (root) NOPASSWD: /usr/local/lib/iconchanger/helper.sh"
+            ),
+            "migration must detect a previous installed helper sudoers rule"
+        )
+        assertEqual(
+            LegacySudoersPolicy.previousInstalledHelperLines(username: "snaix"),
+            [
+                "ALL ALL=(ALL) NOPASSWD: /usr/local/lib/iconchanger/helper.sh",
+                "snaix ALL=(ALL) NOPASSWD: /usr/local/lib/iconchanger/helper.sh",
+                "snaix ALL=(root) NOPASSWD: /usr/local/lib/iconchanger/helper.sh",
+            ],
+            "migration cleanup must remove only the documented old helper grants"
+        )
         assertEqual(
             LegacySudoersPolicy.exactLegacyLines(
                 username: "snaix",
@@ -91,6 +107,15 @@ enum SudoPermissionProbeTests {
                 "arguments: [\"-k\", \"-n\", \"--\", helperScriptURL.path, \"--self-test\"]"
             ),
             "the permission probe must invalidate cached credentials"
+        )
+        precondition(
+            iconManagerSource.contains("old_previous_root_user") &&
+                iconManagerSource.contains("previousInstalledHelperLines"),
+            "sudoers migration must delete only recognized rules targeting the previous install path"
+        )
+        precondition(
+            iconManagerSource.contains("/Library/PrivilegedHelperTools/IconChanger"),
+            "new helper installs must use the protected helper directory"
         )
         precondition(
             iconManagerSource.contains(

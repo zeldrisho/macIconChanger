@@ -392,8 +392,11 @@ struct AdvancedSettingsView: View {
             } header: {
                 Label("Command Line Tool", systemImage: "terminal")
             } footer: {
-                Text("Install path: \(cliManager.installLocation)")
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Install path: \(cliManager.installLocation)")
+                    Text("If ~/.local/bin is not on your PATH, add it to your shell configuration and restart Terminal.")
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             Section {

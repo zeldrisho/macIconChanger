@@ -28,21 +28,24 @@ permissions:
 jobs:
   candidate:
     name: Release candidate
-    runs-on: macos-26
+    runs-on: macos-latest
     env:
       APP_PATH: build/IconChanger.app
       DMG_PATH: build/candidate/IconChanger.dmg
       CANDIDATE_DIR: build/candidate
     steps:
       - name: Checkout requested source
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.ref }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Validate version and source
+        env:
+          VERSION_INPUT: ${{ inputs.version }}
         run: |
-          VERSION="${{ inputs.version }}"
+          VERSION="$VERSION_INPUT"
           python3 scripts/build-number.py "$VERSION" >/dev/null
           BUILD_NUMBER=$(python3 scripts/build-number.py "$VERSION")
           SOURCE_SHA=$(git rev-parse HEAD)
@@ -53,11 +56,13 @@ jobs:
             *pre*|*alpha*|*beta*|*rc*) IS_PRERELEASE=true ;;
           esac
 
-          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-          echo "BUILD_NUMBER=$BUILD_NUMBER" >> "$GITHUB_ENV"
-          echo "SOURCE_SHA=$SOURCE_SHA" >> "$GITHUB_ENV"
-          echo "TAG=$TAG" >> "$GITHUB_ENV"
-          echo "IS_PRERELEASE=$IS_PRERELEASE" >> "$GITHUB_ENV"
+          {
+            echo "VERSION=$VERSION"
+            echo "BUILD_NUMBER=$BUILD_NUMBER"
+            echo "SOURCE_SHA=$SOURCE_SHA"
+            echo "TAG=$TAG"
+            echo "IS_PRERELEASE=$IS_PRERELEASE"
+          } >> "$GITHUB_ENV"
 
       - name: Run regression tests
         run: bash tests/run.sh
@@ -159,11 +164,13 @@ jobs:
           fi
 
           echo "Candidate signing mode: $SIGNING_KIND"
-          echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
-          echo "SIGNING_IDENTITY=$SIGNING_IDENTITY" >> "$GITHUB_ENV"
-          echo "SIGNING_KIND=$SIGNING_KIND" >> "$GITHUB_ENV"
-          echo "SIGNING_ENTITLEMENTS=$SIGNING_ENTITLEMENTS" >> "$GITHUB_ENV"
-          echo "SIGNING_KEYCHAIN_FLAGS=$SIGNING_KEYCHAIN_FLAGS" >> "$GITHUB_ENV"
+          {
+            echo "KEYCHAIN_PATH=$KEYCHAIN_PATH"
+            echo "SIGNING_IDENTITY=$SIGNING_IDENTITY"
+            echo "SIGNING_KIND=$SIGNING_KIND"
+            echo "SIGNING_ENTITLEMENTS=$SIGNING_ENTITLEMENTS"
+            echo "SIGNING_KEYCHAIN_FLAGS=$SIGNING_KEYCHAIN_FLAGS"
+          } >> "$GITHUB_ENV"
 
       - name: Resolve packages
         run: |
@@ -212,6 +219,7 @@ jobs:
 
       - name: Build styled DMG
         run: |
+          python3 -c 'import sys; assert sys.version_info >= (3, 10), sys.version'
           python3 -m venv "$RUNNER_TEMP/iconchanger-release-tools"
           "$RUNNER_TEMP/iconchanger-release-tools/bin/pip" \
             install --disable-pip-version-check "dmgbuild==1.6.7"
@@ -287,7 +295,7 @@ jobs:
             }' > "$CANDIDATE_DIR/candidate.json"
 
       - name: Upload candidate for user testing
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: IconChanger-${{ env.VERSION }}-candidate
           path: build/candidate/

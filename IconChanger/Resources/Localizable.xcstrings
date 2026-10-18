@@ -27026,6 +27026,16 @@
         }
       }
     },
+    "If ~/.local/bin is not on your PATH, add it to your shell configuration and restart Terminal." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "If ~/.local/bin is not on your PATH, add it to your shell configuration and restart Terminal."
+          }
+        }
+      }
+    },
     "Install path: %@" : {
       "localizations" : {
         "ar" : {

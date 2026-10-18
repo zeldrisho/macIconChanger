@@ -19,11 +19,26 @@ if ! git -C "$PROJECT_DIR" diff --quiet ||
 fi
 
 gh auth status >/dev/null
+ORIGIN_URL="$(git -C "$PROJECT_DIR" remote get-url origin)"
+case "$ORIGIN_URL" in
+    https://github.com/*) REPOSITORY="${ORIGIN_URL#https://github.com/}" ;;
+    git@github.com:*) REPOSITORY="${ORIGIN_URL#git@github.com:}" ;;
+    ssh://git@github.com/*) REPOSITORY="${ORIGIN_URL#ssh://git@github.com/}" ;;
+    *) REPOSITORY="" ;;
+esac
+REPOSITORY="${REPOSITORY%.git}"
+if [[ ! "$REPOSITORY" =~ ^[^/]+/[^/]+$ ]]; then
+    echo "Could not determine the GitHub repository from origin." >&2
+    exit 1
+fi
+
 gh workflow run release-candidate.yml \
-    --repo Bengerthelorf/macIconChanger \
+    --repo "$REPOSITORY" \
     -f "version=$VERSION" \
     -f "ref=$SOURCE_REF"
 
-echo "Release candidate requested for $VERSION from $SOURCE_REF."
+echo "Release candidate requested in $REPOSITORY for $VERSION from $SOURCE_REF."
+echo "Download the IconChanger-<version>-candidate artifact from that Actions run to test it."
+echo "After testing, run Publish Tested Release in the same repository to publish it."
 echo "This does not create a tag or publish a release."
 echo "After testing the downloaded candidate, run Publish Tested Release manually."

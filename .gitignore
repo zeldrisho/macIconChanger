@@ -24,6 +24,7 @@ xcuserdata/
 .swiftpm/
 .build/
 Package.resolved
+!IconChanger.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
 
 # macOS
 .DS_Store

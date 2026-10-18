@@ -13,7 +13,6 @@ enum SetupHealth: Equatable {
     case outdatedHelperFiles
     case manualMode
     case needsLegacyPermissionCleanup
-    case needsAppManagementPermission
     case error(String)
 
     var needsAttention: Bool {
@@ -43,6 +42,7 @@ enum SetupHealth: Equatable {
         }
     }
 
+    /// A localized setup status description, or the underlying error message.
     var statusDescription: String {
         switch self {
         case .checking:
@@ -59,8 +59,6 @@ enum SetupHealth: Equatable {
             return NSLocalizedString("Manual mode — background automation paused", comment: "Setup health status")
         case .needsLegacyPermissionCleanup:
             return NSLocalizedString("Legacy administrator permission cleanup required", comment: "Setup health status")
-        case .needsAppManagementPermission:
-            return NSLocalizedString("App Management permission required", comment: "Setup health status")
         case .error(let message):
             return message
         }

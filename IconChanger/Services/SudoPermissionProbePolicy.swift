@@ -49,8 +49,27 @@ enum SudoersRulePolicy {
 }
 
 enum LegacySudoersPolicy {
+    static let previousInstalledHelperPath = "/usr/local/lib/iconchanger/helper.sh"
+
     static func legacyHelperPath(homeDirectory: String) -> String {
         "\(homeDirectory)/.iconchanger/helper.sh"
+    }
+
+    /// Reports whether sudo output lists a passwordless grant to the previous installed helper.
+    static func containsPreviousInstalledHelperRule(in sudoListOutput: String) -> Bool {
+        sudoListOutput.split(whereSeparator: \.isNewline).contains { line in
+            line.contains("NOPASSWD:") && line.contains(previousInstalledHelperPath)
+        }
+    }
+
+    /// Returns the three recognized sudoers lines for the previous helper location.
+    /// Migration uses these exact lines to avoid removing unrelated grants.
+    static func previousInstalledHelperLines(username: String) -> [String] {
+        [
+            "ALL ALL=(ALL) NOPASSWD: \(previousInstalledHelperPath)",
+            "\(username) ALL=(ALL) NOPASSWD: \(previousInstalledHelperPath)",
+            "\(username) ALL=(root) NOPASSWD: \(previousInstalledHelperPath)",
+        ]
     }
 
     static func containsLegacyRule(in sudoListOutput: String, homeDirectory: String) -> Bool {

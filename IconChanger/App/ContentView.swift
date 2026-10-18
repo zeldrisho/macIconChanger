@@ -18,6 +18,7 @@ struct ContentView: View {
     @State private var hasPresentedManualModeAlert = false
     @State private var showPermissionRepairError = false
 
+    /// Displays application browsing or setup guidance for the current setup health.
     var body: some View {
         Group {
             switch setupMonitor.health {
@@ -126,46 +127,6 @@ struct ContentView: View {
                              .multilineTextAlignment(.center)
                              .padding(.horizontal)
                      }
-                 }
-                 .padding()
-
-            case .needsAppManagementPermission:
-                 VStack(spacing: 15) {
-                      Image(systemName: "app.badge.checkmark")
-                          .resizable().scaledToFit().frame(width: 40, height: 40).foregroundColor(.orange)
-                          .padding(.bottom, 5)
-                     Text("App Management Permission")
-                         .font(.title2.bold())
-                     Text("IconChanger needs App Management permission to modify app icons.\nPlease enable it in System Settings, then come back and click the button below.")
-                          .multilineTextAlignment(.center)
-                          .foregroundColor(.secondary)
-                         .padding(.horizontal)
-
-                     Button {
-                         iconManager.requestAppManagementPermission { granted in
-                             if granted {
-                                 checkFullSetup()
-                             }
-                         }
-                     } label: {
-                         Label("Request Permission", systemImage: "lock.open.fill")
-                     }
-                     .controlSize(.large)
-                     .padding(.top, 5)
-
-                     Button {
-                         NSWorkspace.shared.openLocationService(for: .appManagement)
-                     } label: {
-                         Label("Open System Settings", systemImage: "gear")
-                     }
-                     .controlSize(.large)
-
-                     Button {
-                         checkFullSetup()
-                     } label: {
-                         Label("I've Enabled It", systemImage: "checkmark.circle")
-                     }
-                     .controlSize(.large)
                  }
                  .padding()
 
@@ -306,17 +267,5 @@ struct ContentView: View {
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView()
-    }
-}
-
-extension NSWorkspace {
-
-    enum SystemServiceType: String {
-        case appManagement = "x-apple.systempreferences:com.apple.preference.security?Privacy_AppBundles"
-    }
-
-    func openLocationService(for type: SystemServiceType) {
-        guard let url = URL(string: type.rawValue) else { return }
-        NSWorkspace.shared.open(url)
     }
 }

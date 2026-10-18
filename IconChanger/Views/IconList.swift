@@ -4,6 +4,11 @@
 //
 
 import SwiftUI
+import AppKit
+
+private struct SendableIconImage: @unchecked Sendable {
+    let image: NSImage
+}
 
 enum AppFilter: String, CaseIterable, Identifiable {
     case all = "All"
@@ -523,6 +528,7 @@ struct IconView: View {
         }
     }
 
+    /// Loads the app or folder icon, using the memory cache before background loading.
     private func loadIcon() async {
         if let cached = AppIconCache.shared.cachedIcon(for: app.url) {
             icon = cached
@@ -530,12 +536,12 @@ struct IconView: View {
         }
         let url = app.url
         let loaded = await Task.detached(priority: .userInitiated) {
-            if isFolder {
-                return NSWorkspace.shared.icon(forFile: url.path)
-            }
-            return AppIconCache.shared.icon(for: url)
+            let image = isFolder
+                ? NSWorkspace.shared.icon(forFile: url.path)
+                : AppIconCache.shared.icon(for: url)
+            return SendableIconImage(image: image)
         }.value
-        icon = loaded
+        icon = loaded.image
     }
 }
 
@@ -838,6 +844,7 @@ struct DockPreviewIcon: View {
         .onChange(of: refreshTrigger) { _ in Task { await loadIcon() } }
     }
 
+    /// Loads the Dock preview icon and updates whether the app has a cached custom icon.
     private func loadIcon() async {
         let url = app.url
         let appId = app.id
@@ -847,11 +854,11 @@ struct DockPreviewIcon: View {
             return
         }
         let (loaded, isCached) = await Task.detached(priority: .userInitiated) {
-            let img = AppIconCache.shared.icon(for: url)
+            let image = AppIconCache.shared.icon(for: url)
             let cached = IconCacheManager.shared.getIconCache(for: appId) != nil
-            return (img, cached)
+            return (SendableIconImage(image: image), cached)
         }.value
-        icon = loaded
+        icon = loaded.image
         hasCustom = isCached
     }
 }
