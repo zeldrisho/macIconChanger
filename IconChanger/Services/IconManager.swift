@@ -1018,6 +1018,10 @@ class IconManager: ObservableObject {
         if !iconFileName.hasSuffix(".icns") {
             iconFileName += ".icns"
         }
+        // Info.plist is untrusted: accept a bare file name only, never a path.
+        guard !iconFileName.isEmpty,
+              iconFileName != ".", iconFileName != "..",
+              !iconFileName.contains("/"), !iconFileName.contains("\0") else { return nil }
 
         let iconURL = app.url
             .appendingPathComponent("Contents")
