@@ -1111,15 +1111,15 @@ struct EscapeJailCommand: ParsableCommand {
             throw CLIError.fileNotFound("Invalid CFBundleIconFile in \(appName)")
         }
 
-        let iconPath = appURL
+        // Pick the icon from the Resources listing instead of building a path from plist data.
+        let resourcesURL = appURL
             .appendingPathComponent("Contents")
             .appendingPathComponent("Resources")
-            .appendingPathComponent(iconFileName)
-            .path
-
-        guard FileManager.default.fileExists(atPath: iconPath) else {
-            throw CLIError.fileNotFound("Icon file not found: \(iconPath)")
+        let resourceNames = (try? FileManager.default.contentsOfDirectory(atPath: resourcesURL.path)) ?? []
+        guard let matchedName = resourceNames.first(where: { $0 == iconFileName }) else {
+            throw CLIError.fileNotFound("Icon file not found: \(iconFileName)")
         }
+        let iconPath = resourcesURL.appendingPathComponent(matchedName).path
 
         if dryRun {
             print("  → Would escape jail for \(appName)")
