@@ -96,6 +96,16 @@ if [[ "$MODE" == "set" ]]; then
             exit 1
             ;;
     esac
+
+    RESOURCES_PATH="$(/bin/realpath "$APP_PATH/Contents/Resources")"
+    IMAGE_PATH="$(/bin/realpath "$IMAGE_PATH")"
+    case "$IMAGE_PATH" in
+        "$RESOURCES_PATH"/*) ;;
+        *)
+            echo "ERROR: IMAGE_PATH is outside the app Resources directory: $IMAGE_PATH" >&2
+            exit 1
+            ;;
+    esac
 fi
 
 if [ ! -x "$FILEICON_PATH" ]; then

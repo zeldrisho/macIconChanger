@@ -1018,13 +1018,18 @@ class IconManager: ObservableObject {
         if !iconFileName.hasSuffix(".icns") {
             iconFileName += ".icns"
         }
+        // Info.plist is untrusted: accept a bare file name only, never a path.
+        guard !iconFileName.isEmpty,
+              iconFileName != ".", iconFileName != "..",
+              !iconFileName.contains("/"), !iconFileName.contains("\0") else { return nil }
 
-        let iconURL = app.url
+        // Pick the icon from the Resources listing instead of building a path from plist data.
+        let resourcesURL = app.url
             .appendingPathComponent("Contents")
             .appendingPathComponent("Resources")
-            .appendingPathComponent(iconFileName)
-
-        return FileManager.default.fileExists(atPath: iconURL.path) ? iconURL : nil
+        let resourceNames = (try? FileManager.default.contentsOfDirectory(atPath: resourcesURL.path)) ?? []
+        guard let matchedName = resourceNames.first(where: { $0 == iconFileName }) else { return nil }
+        return resourcesURL.appendingPathComponent(matchedName)
     }
 
     /// Checks if an app currently has a custom icon set (via extended attributes).

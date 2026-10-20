@@ -79,9 +79,9 @@ private func applyIcon(imagePath: String?, to appPath: String) throws {
     guard fm.fileExists(atPath: helperScript.path), fm.fileExists(atPath: fileicon.path) else {
         throw CLIError.setupIncomplete("This app requires the optional privileged helper. Run IconChanger's permission setup for protected targets.")
     }
-    let operation = imagePath.map { "'\(fileicon.path.shellEscaped)' '\(appPath.shellEscaped)' '\($0.shellEscaped)'" }
-        ?? "--remove '\(fileicon.path.shellEscaped)' '\(appPath.shellEscaped)'"
-    try shell("sudo -n '\(helperScript.path.shellEscaped)' \(operation)")
+    let operation = imagePath.map { [fileicon.path, appPath, $0] }
+        ?? ["--remove", fileicon.path, appPath]
+    try runTool("/usr/bin/sudo", ["-n", "--", helperScript.path] + operation)
 }
 
 /// Idempotent one-time migration from legacy `~/.iconchanger/` layout.
@@ -344,9 +344,9 @@ private func currentSystemUsesDarkAppearance() -> Bool {
 }
 
 private func refreshDockTwice() throws {
-    _ = try shell("killall Dock")
+    _ = try runTool("/usr/bin/killall", ["Dock"])
     Thread.sleep(forTimeInterval: 1)
-    _ = try shell("killall Dock")
+    _ = try runTool("/usr/bin/killall", ["Dock"])
 }
 
 private func validateConfig(at url: URL) throws -> AppConfiguration {
@@ -367,18 +367,20 @@ private func validateConfig(at url: URL) throws -> AppConfiguration {
     return config
 }
 
-// MARK: - Shell Helpers
+// MARK: - Process Helpers
 
+/// Runs an executable directly with an argument vector. No shell is involved,
+/// so arguments are never re-interpreted.
 @discardableResult
-private func shell(_ command: String, timeout: TimeInterval = 15.0) throws -> String {
+private func runTool(_ executable: String, _ arguments: [String], timeout: TimeInterval = 15.0) throws -> String {
     let task = Process()
     let outPipe = Pipe()
     let errPipe = Pipe()
 
     task.standardOutput = outPipe
     task.standardError = errPipe
-    task.arguments = ["-c", command]
-    task.executableURL = URL(fileURLWithPath: "/bin/zsh")
+    task.arguments = arguments
+    task.executableURL = URL(fileURLWithPath: executable)
     task.standardInput = nil
     task.environment = ProcessInfo.processInfo.environment
 
@@ -420,12 +422,6 @@ private func shell(_ command: String, timeout: TimeInterval = 15.0) throws -> St
     }
 
     return output
-}
-
-private extension String {
-    var shellEscaped: String {
-        self.replacingOccurrences(of: "'", with: "'\\''")
-    }
 }
 
 // MARK: - Errors
@@ -498,8 +494,8 @@ struct StatusCommand: ParsableCommand {
 
         // Sudoers
         var sudoersOK = false
-        if let result = try? shell("sudo -n -l 2>/dev/null | grep -q helper.sh && echo ok || echo no") {
-            sudoersOK = result == "ok"
+        if let result = try? runTool("/usr/bin/sudo", ["-n", "-l"]) {
+            sudoersOK = result.contains("helper.sh")
         }
 
         // Stats
@@ -1105,19 +1101,42 @@ struct EscapeJailCommand: ParsableCommand {
         guard var iconFileName = plist["CFBundleIconFile"] as? String else {
             throw CLIError.fileNotFound("No CFBundleIconFile in \(appName)")
         }
+        guard !iconFileName.isEmpty, iconFileName != ".", iconFileName != ".." else {
+            throw CLIError.fileNotFound("Invalid CFBundleIconFile in \(appName)")
+        }
         if !iconFileName.hasSuffix(".icns") {
             iconFileName += ".icns"
         }
+        // Info.plist is untrusted: accept a bare file name only, never a path.
+        guard !iconFileName.isEmpty,
+              iconFileName != ".", iconFileName != "..",
+              !iconFileName.contains("/"), !iconFileName.contains("\0") else {
+            throw CLIError.fileNotFound("Invalid CFBundleIconFile in \(appName)")
+        }
 
-        let iconPath = appURL
+        // Pick the icon from the Resources listing instead of building a path from plist data.
+        let resourcesURL = appURL
             .appendingPathComponent("Contents")
             .appendingPathComponent("Resources")
-            .appendingPathComponent(iconFileName)
-            .path
-
-        guard FileManager.default.fileExists(atPath: iconPath) else {
-            throw CLIError.fileNotFound("Icon file not found: \(iconPath)")
+        let resourceNames = (try? FileManager.default.contentsOfDirectory(atPath: resourcesURL.path)) ?? []
+        guard let matchedName = resourceNames.first(where: { $0 == iconFileName }) else {
+            throw CLIError.fileNotFound("Icon file not found: \(iconFileName)")
         }
+        let iconPath = resourcesURL.appendingPathComponent(matchedName).path
+
+        let resolvedResourcesURL = resourcesURL
+            .resolvingSymlinksInPath()
+            .standardizedFileURL
+        let resolvedIconURL = URL(fileURLWithPath: iconPath)
+            .resolvingSymlinksInPath()
+            .standardizedFileURL
+        let resolvedResourcesPath = resolvedResourcesURL.path.hasSuffix("/")
+            ? resolvedResourcesURL.path
+            : resolvedResourcesURL.path + "/"
+        guard resolvedIconURL.path.hasPrefix(resolvedResourcesPath) else {
+            throw CLIError.fileNotFound("Icon file resolves outside app Resources: \(iconPath)")
+        }
+        let resolvedIconPath = resolvedIconURL.path
 
         if dryRun {
             print("  → Would escape jail for \(appName)")
@@ -1125,8 +1144,7 @@ struct EscapeJailCommand: ParsableCommand {
         }
 
         // Apply the app's own icon as a custom icon via fileicon
-        let command = "sudo -n '\(helperScript.path.shellEscaped)' '\(fileicon.path.shellEscaped)' '\(path.shellEscaped)' '\(iconPath.shellEscaped)'"
-        try shell(command)
+        try runTool("/usr/bin/sudo", ["-n", "--", helperScript.path, fileicon.path, path, resolvedIconPath])
 
         if verbose {
             print("  ✓ \(appName)")
