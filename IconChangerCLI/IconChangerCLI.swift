@@ -1101,6 +1101,9 @@ struct EscapeJailCommand: ParsableCommand {
         guard var iconFileName = plist["CFBundleIconFile"] as? String else {
             throw CLIError.fileNotFound("No CFBundleIconFile in \(appName)")
         }
+        guard !iconFileName.isEmpty, iconFileName != ".", iconFileName != ".." else {
+            throw CLIError.fileNotFound("Invalid CFBundleIconFile in \(appName)")
+        }
         if !iconFileName.hasSuffix(".icns") {
             iconFileName += ".icns"
         }
@@ -1121,13 +1124,27 @@ struct EscapeJailCommand: ParsableCommand {
         }
         let iconPath = resourcesURL.appendingPathComponent(matchedName).path
 
+        let resolvedResourcesURL = resourcesURL
+            .resolvingSymlinksInPath()
+            .standardizedFileURL
+        let resolvedIconURL = URL(fileURLWithPath: iconPath)
+            .resolvingSymlinksInPath()
+            .standardizedFileURL
+        let resolvedResourcesPath = resolvedResourcesURL.path.hasSuffix("/")
+            ? resolvedResourcesURL.path
+            : resolvedResourcesURL.path + "/"
+        guard resolvedIconURL.path.hasPrefix(resolvedResourcesPath) else {
+            throw CLIError.fileNotFound("Icon file resolves outside app Resources: \(iconPath)")
+        }
+        let resolvedIconPath = resolvedIconURL.path
+
         if dryRun {
             print("  → Would escape jail for \(appName)")
             return
         }
 
         // Apply the app's own icon as a custom icon via fileicon
-        try runTool("/usr/bin/sudo", ["-n", "--", helperScript.path, fileicon.path, path, iconPath])
+        try runTool("/usr/bin/sudo", ["-n", "--", helperScript.path, fileicon.path, path, resolvedIconPath])
 
         if verbose {
             print("  ✓ \(appName)")
