@@ -2,5 +2,413 @@
 <rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
     <channel>
         <title>IconChanger</title>
+        <item>
+                    <title>Version 1.5.1</title>
+                    <link>https://github.com/zeldrisho/macIconChanger</link>
+                    <sparkle:version>40105019000</sparkle:version>
+                    <sparkle:shortVersionString>1.5.1</sparkle:shortVersionString>
+                    <pubDate>Tue, 20 Oct 2026 18:03:38 +0000</pubDate>
+                    <enclosure url="https://github.com/zeldrisho/macIconChanger/releases/download/v1.5.1/IconChanger.dmg"
+                    sparkle:edSignature="poiUAFksD4mqgDY9g9Io4FP1PJMKW5IX7NzWZgOiJzWrt9tQrhsoARg/TSulm4K3kHelC6WlXgs9AKWJ8TBGBQ==" length="8676941"
+                    type="application/octet-stream"/>
+                    <description>
+                        <![CDATA[
+                    <h2>Version 1.5.1</h2>
+                    <ul>
+                        <li><strong>Fixed:</strong> apply CodeRabbit autofixes</li>
+                        <li>fix(security): resolve bundled icon from Resources listing</li>
+                        <li>fix(security): resolve CodeQL command injection and path alerts</li>
+                        <li><strong>Fixed:</strong> apply CodeRabbit autofixes</li>
+                        <li><strong>Docs:</strong> document icon operations, helper setup, and CLI behavior</li>
+                        <li>feat(security): reduce privileges for writable app icon changes</li>
+                        <li>fix(security): harden fork release and CodeQL workflows</li>
+                        <li><strong>Docs:</strong> add repository agent instructions</li>
+                        <li><strong>Fixed:</strong> present manual mode alert reliably</li>
+                        <li><strong>Fixed:</strong> support managed Mac helper permissions</li>
+                        <li><strong>Fixed:</strong> stop repeated app update restores</li>
+                        <li><strong>New:</strong> add configurable developer diagnostics</li>
+                        <li><strong>Docs:</strong> update Star History chart</li>
+                        <li><strong>Fixed:</strong> authenticate Homebrew release pushes</li>
+                        <li><strong>Fixed:</strong> accept stable release candidates</li>
+                        <li><strong>New:</strong> automatically load remote icons by default</li>
+                        <li><strong>Fixed:</strong> remove deprecated plaintext config handoff</li>
+                        <li>test: avoid optional tools in security checks</li>
+                        <li>test: compare canonical helper targets</li>
+                        <li><strong>Fixed:</strong> preserve appearance icons across backup and restore</li>
+                        <li><strong>New:</strong> switch icons with system appearance</li>
+                        <li>ci: keep appcast publishing idempotent</li>
+                        <li>ci: deploy Sparkle feed with GitHub Pages</li>
+                        <li>ci: rebuild Pages after publishing appcast</li>
+                        <li>ci: allow release workflow to redeploy docs</li>
+                        <li>style: remove trailing whitespace</li>
+                        <li>test: align Sparkle fixture with 1.5 prerelease</li>
+                        <li>ci: verify certificate revocation status</li>
+                        <li>ci: build a portable signing probe</li>
+                        <li>ci: reject unusable signing certificates</li>
+                        <li>ci: harden Sparkle release candidates</li>
+                        <li>ci: support free-account release candidates</li>
+                        <li>security: clean up legacy sudoers permission</li>
+                        <li>security: bound remote icon downloads</li>
+                        <li>ci: add gated notarized release workflow</li>
+                        <li>Reapply &quot;Remove irreversible Launchpad deletion (#11)&quot;</li>
+                        <li>Revert &quot;Remove irreversible Launchpad deletion (#11)&quot;</li>
+                        <li>Remove irreversible Launchpad deletion (#11)</li>
+                        <li>Fix sudo permission verification (#30)</li>
+                        <li>Fix explicit icon loading and history reuse (#36)</li>
+                        <li><strong>Fixed:</strong> surface setup failures during background launch (#35)</li>
+                        <li><strong>Fixed:</strong> restore reliable app update detection (#38)</li>
+                        <li>test(security): cover privileged icon path handling</li>
+                        <li><strong>Fixed:</strong> verify setup on launch regardless of window visibility (#35)</li>
+                        <li><strong>Fixed:</strong> run local icon import off the main thread with progress (#32)</li>
+                        <li><strong>Fixed:</strong> restart background timers when restore toggles change (#38)</li>
+                        <li>fix(security): prevent root RCE via AppleScript injection in fileicon</li>
+                        <li>docs(readme): /guide/* is now /docs/*</li>
+                        <li>ci(docs): also rebuild snaix.homes on release publish</li>
+                        <li><strong>Docs:</strong> restore translations in snaix format (ar / cs / da / de / el / es / fi / fr / hi / hu / id / it / ja / ko / ms / nb / nl / pl / pt / ro / ru / sv / th / tr / uk / vi / zh-HK)</li>
+                        <li><strong>Docs:</strong> migrate from VitePress to snaix.homes content format</li>
+                        <li><strong>Fixed:</strong> migrate storage to macOS-standard paths (#32)</li>
+                        <li><strong>Refactor:</strong> second-pass audit — threading, dead code, and code quality</li>
+                        <li><strong>Fixed:</strong> comprehensive code audit — threading, safety, and dead code cleanup</li>
+                        <li><strong>Fixed:</strong> restore VitePress base to /macIconChanger/ on main</li>
+                        <li><strong>Fixed:</strong> revert VitePress base to /macIconChanger/ for GitHub Pages</li>
+                        <li><strong>Fixed:</strong> update documentation URLs to new domain app.snaix.homes</li>
+                        <li><strong>Fixed:</strong> update VitePress base path to match new deployment URL</li>
+                        <li><strong>Refactor:</strong> clean up comments to only explain why</li>
+                        <li><strong>Fixed:</strong> detect stale sudoers path by dry-running helper instead of sudo -n -l</li>
+                        <li><strong>Fixed:</strong> restore error now shows specific app names and failure reasons</li>
+                        <li><strong>Fixed:</strong> settings restore now shows partial failures instead of false success</li>
+                        <li><strong>Fixed:</strong> detect app updates by bundle version instead of modDate</li>
+                        <li><strong>New:</strong> restore result summary with skipped/failed counts</li>
+                        <li><strong>Fixed:</strong> restore cleanup ordering, progress accuracy, main thread safety</li>
+                        <li><strong>Fixed:</strong> PBKDF2 key derivation, wrong password error, restore skip reporting</li>
+                        <li><strong>New:</strong> floating restore progress with liquid glass on macOS 26</li>
+                        <li><strong>New:</strong> restore progress overlay, batch UI refresh</li>
+                        <li><strong>Fixed:</strong> refresh UI after config import</li>
+                        <li><strong>Fixed:</strong> update documentation URLs to new domain app.snaix.homes</li>
+                        <li><strong>Fixed:</strong> update VitePress base path to match new deployment URL</li>
+                        <li><strong>Refactor:</strong> clean up comments to only explain why</li>
+                        <li><strong>Fixed:</strong> detect stale sudoers path by dry-running helper instead of sudo -n -l</li>
+                        <li><strong>Fixed:</strong> restore error now shows specific app names and failure reasons</li>
+                        <li><strong>Fixed:</strong> settings restore now shows partial failures instead of false success</li>
+                        <li><strong>Fixed:</strong> detect app updates by bundle version instead of modDate</li>
+                        <li><strong>New:</strong> restore result summary with skipped/failed counts</li>
+                        <li><strong>Fixed:</strong> restore cleanup ordering, progress accuracy, main thread safety</li>
+                        <li><strong>Fixed:</strong> PBKDF2 key derivation, wrong password error, restore skip reporting</li>
+                        <li><strong>New:</strong> floating restore progress with liquid glass on macOS 26</li>
+                        <li><strong>New:</strong> restore progress overlay, batch UI refresh</li>
+                        <li><strong>Fixed:</strong> refresh UI after config import</li>
+                        <li><strong>Refactor:</strong> migrate settings keys, encrypted export UI, backward compat</li>
+                        <li><strong>New:</strong> encrypted export, centralized settings registry, .icconfig format</li>
+                        <li><strong>Refactor:</strong> extract CI scripts, semantic build numbers (30VVVTTNNN)</li>
+                        <li><strong>Fixed:</strong> CI inserts enclosure when missing from manual sparkle entries</li>
+                        <li><strong>New:</strong> use TCC private API for App Management permission detection</li>
+                        <li>ci: force checkout main when pushing appcast from non-main branches</li>
+                        <li><strong>New:</strong> Sparkle pre-release channel with opt-in toggle</li>
+                        <li><strong>New:</strong> add App Management (TCC) permission check to setup flow</li>
+                        <li><strong>Fixed:</strong> CI appcast handling, pipe deadlock, and main thread blocking</li>
+                        <li><strong>Fixed:</strong> add missing enclosure to 1.4.4-pre-2 appcast entry</li>
+                        <li><strong>Fixed:</strong> add missing enclosure to 1.4.4-5 appcast entry</li>
+                        <li><strong>Fixed:</strong> permission detection on corporate/managed Macs</li>
+                        <li><strong>Docs:</strong> refine purple theme with frosted glass effects and stronger light-mode glow</li>
+                        <li><strong>Docs:</strong> update hero screenshots and add purple theme with glow effects</li>
+                        <li>ci: generate deltas for all releases with date-based build numbers</li>
+                        <li><strong>Fixed:</strong> prevent duplicate request counting on deduplicated queries</li>
+                        <li><strong>Fixed:</strong> refresh usage display after API test and allow directory paths in helper</li>
+                        <li><strong>Fixed:</strong> sync API usage tracker with server-side rate limit responses</li>
+                        <li><strong>Fixed:</strong> handle HTTP 429 responses in request retry loop</li>
+                        <li><strong>New:</strong> add per-key connection test and confirmation for destructive settings actions</li>
+                        <li><strong>Fixed:</strong> skip duplicate base versions in delta generation to prevent generate_appcast failure</li>
+                        <li><strong>Refactor:</strong> clean up request headers and streamline API key resolution</li>
+                        <li><strong>Fixed:</strong> resolve timer race conditions and stabilize ForEach identity</li>
+                        <li><strong>Refactor:</strong> extract API key management and add copy version on tap</li>
+                        <li><strong>New:</strong> optimize icon search with folder queries and Extended Search setting</li>
+                        <li>ci: add Sparkle delta update generation to release workflow</li>
+                        <li><strong>Docs:</strong> update SECURITY.md supported versions threshold to &lt; 1.3</li>
+                        <li><strong>Fixed:</strong> add RTL spacing for navbar logo and title</li>
+                        <li><strong>Docs:</strong> add display settings page, update setup/aliases/api-key/changing-icons for all 30 locales</li>
+                        <li><strong>Docs:</strong> add SECURITY.md with vulnerability reporting policy</li>
+                        <li><strong>Fixed:</strong> use separate hero images for light/dark mode with transparent backgrounds</li>
+                        <li><strong>Fixed:</strong> constrain hero image width on mobile viewports</li>
+                        <li><strong>Fixed:</strong> remove redundant helper integrity check in ensureSetupCompleted</li>
+                        <li>Fix: sort primary app icon first in Local icon list</li>
+                        <li>Fix: isolate deprecated CGWindowListCreateImage and Sendable conformance</li>
+                        <li>Security: harden privileged helper infrastructure</li>
+                        <li><strong>New:</strong> add adjustable wallpaper spread and blur settings</li>
+                        <li><strong>New:</strong> Dock Preview wallpaper bleeds under sidebar with toggle setting</li>
+                        <li><strong>New:</strong> increase Dock Preview wallpaper bleed area</li>
+                        <li><strong>Fixed:</strong> use Xcode CURRENT_PROJECT_VERSION for Sparkle build numbers</li>
+                        <li><strong>Fixed:</strong> YAML indentation in build.yml breaking workflow parse</li>
+                        <li>ci: auto-generate Sparkle release notes from changelog</li>
+                        <li><strong>Fixed:</strong> Sparkle update detection and missing release notes</li>
+                        <li><strong>Fixed:</strong> clean up API error messages and treat 404 as empty results</li>
+                        <li><strong>Docs:</strong> replace blurry 64x64 README icon with clear 512x512 version</li>
+                        <li><strong>Docs:</strong> redesign READMEs as visual landing pages pointing to documentation site</li>
+                        <li><strong>New:</strong> add API rate limiting, retry logic, and distinct error messages</li>
+                        <li><strong>Fixed:</strong> Local icons section shows infinite spinner for folders</li>
+                        <li><strong>Fixed:</strong> Dock Preview filtering and icon refresh consistency</li>
+                        <li><strong>New:</strong> add folder icon customization</li>
+                        <li><strong>New:</strong> add icon favorites and history features</li>
+                        <li><strong>Fixed:</strong> align language selector dropdown to left in RTL mode</li>
+                        <li><strong>Fixed:</strong> right-align hero text and buttons for Arabic RTL layout</li>
+                        <li><strong>Fixed:</strong> add RTL direction for Arabic locale in docs</li>
+                        <li><strong>Docs:</strong> reorder languages - CJK first, then Latin alphabetical, then non-Latin</li>
+                        <li><strong>Docs:</strong> reorder language selector and rename zh-HK to 中文（香港）</li>
+                        <li><strong>Docs:</strong> rename zh-Hant label to 正體中文, zh-HK to 粵語繁體</li>
+                        <li><strong>Docs:</strong> add Norwegian, Romanian, Thai, Ukrainian, Vietnamese, HK Chinese translations</li>
+                        <li><strong>Docs:</strong> add Czech, Greek, Hindi, Hungarian, Indonesian, Malay translations</li>
+                        <li><strong>Docs:</strong> add Turkish, Polish, Dutch, Swedish, Danish, Finnish translations</li>
+                        <li><strong>Docs:</strong> add Italian, Portuguese, Russian, Arabic, Traditional Chinese translations</li>
+                        <li><strong>Docs:</strong> add French, German, Japanese, Korean, Spanish translations</li>
+                        <li><strong>Docs:</strong> apply text-wrap balance to hero tagline as well</li>
+                        <li><strong>Docs:</strong> add text-wrap balance to hero text for better CJK line breaking</li>
+                        <li><strong>Docs:</strong> sync Chinese docs with English version</li>
+                        <li><strong>Docs:</strong> move Homebrew install command inline with hero action buttons</li>
+                        <li><strong>Docs:</strong> add Homebrew install command with copy button on homepage</li>
+                        <li><strong>Fixed:</strong> override esbuild to v0.25 to resolve dev server vulnerability</li>
+                        <li><strong>Docs:</strong> update hero screenshot and remove border-radius</li>
+                        <li><strong>Docs:</strong> use app screenshot as hero image instead of icon</li>
+                        <li><strong>Docs:</strong> replace hero icon with 1024x1024 version and increase display size</li>
+                        <li><strong>Docs:</strong> streamline README and update preview screenshot</li>
+                        <li><strong>Refactor:</strong> move author avatar to Assets.xcassets with 3-tier caching</li>
+                        <li><strong>New:</strong> add Display settings tab and Dock Preview display mode</li>
+                        <li>i18n: add translations for cache settings and dock glass intensity</li>
+                        <li><strong>New:</strong> persistent API result caching with settings toggle</li>
+                        <li><strong>Fixed:</strong> refresh hasDuplicateName on apps change and clean up drag temp files</li>
+                        <li><strong>Fixed:</strong> eliminate race condition in RequestDeduplicator</li>
+                        <li><strong>Perf:</strong> move JSON encoding and UserDefaults write outside lock</li>
+                        <li><strong>Perf:</strong> cache hasDuplicateName instead of recomputing on every render</li>
+                        <li><strong>Perf:</strong> use @StateObject instead of @ObservedObject for singletons</li>
+                        <li><strong>Perf:</strong> add Equatable conformance to DockLayout for SwiftUI diffing</li>
+                        <li><strong>Fixed:</strong> use Slider&#x27;s native label layout for glass intensity control</li>
+                        <li><strong>Fixed:</strong> glass intensity slider alignment and macOS 26 availability gate</li>
+                        <li><strong>New:</strong> Liquid Glass dock frame with adjustable intensity slider</li>
+                        <li><strong>New:</strong> transparent toolbar and extended wallpaper bleed</li>
+                        <li><strong>New:</strong> add wallpaper bleed effect to Dock Preview bar</li>
+                        <li><strong>Fixed:</strong> persistent DockPreviewBar and performance optimizations</li>
+                        <li><strong>Fixed:</strong> deploy sparkle.xml to GitHub Pages for Sparkle updates</li>
+                        <li><strong>Fixed:</strong> replace placeholder UUIDs in project.pbxproj with proper hex IDs</li>
+                        <li><strong>New:</strong> add appearance mode switcher, avatar caching, and code quality fixes</li>
+                        <li><strong>Refactor:</strong> performance optimizations, code cleanup, and custom icon badge</li>
+                        <li><strong>New:</strong> add Dock filter with preview bar and refresh-dock command</li>
+                        <li><strong>New:</strong> add squircle jail escape and shell completion scripts</li>
+                        <li><strong>New:</strong> add Homebrew Cask support and auto-update tap on release</li>
+                        <li><strong>Docs:</strong> add screenshots and enable images in documentation</li>
+                        <li><strong>Docs:</strong> add VitePress documentation site with GitHub Pages deployment</li>
+                        <li><strong>New:</strong> add drag &amp; drop, keyboard shortcuts, and localization fixes</li>
+                        <li><strong>Docs:</strong> simplify lcandy2 acknowledgement</li>
+                        <li><strong>Fixed:</strong> correct acknowledgements — seril was lcandy2&#x27;s git alias</li>
+                        <li><strong>Docs:</strong> rewrite READMEs with updated CLI, features, and acknowledgements</li>
+                        <li><strong>New:</strong> rewrite CLI with 6 new commands and improved code quality</li>
+                        <li><strong>New:</strong> add 18 more languages for comprehensive i18n coverage</li>
+                        <li><strong>New:</strong> add 7 new languages (de, es, pt, it, ru, ko, zh-HK)</li>
+                        <li><strong>Refactor:</strong> optimize settings UI and fix hidden launch behavior</li>
+                        <li><strong>New:</strong> add Launch at Login with configurable behavior</li>
+                        <li><strong>Fixed:</strong> show friendly error message for protected apps</li>
+                        <li><strong>Fixed:</strong> show permission-specific error with configure button</li>
+                        <li><strong>Fixed:</strong> replace NSLock with actor for async-safe request deduplication</li>
+                        <li><strong>Fixed:</strong> add lock to protect concurrent access to inflightRequests</li>
+                        <li><strong>Fixed:</strong> track alias removal from settings table view</li>
+                        <li><strong>Fixed:</strong> prevent deleted default aliases from reappearing on restart</li>
+                        <li>style: increase avatar tilt from 12 to 20 degrees</li>
+                        <li><strong>Fixed:</strong> move avatar to app icon overlay in About view</li>
+                        <li><strong>Fixed:</strong> use SecureField for API key and fix icon list flickering</li>
+                        <li><strong>Fixed:</strong> deduplicate concurrent API requests for the same query</li>
+                        <li><strong>Refactor:</strong> extract magic numbers into named constants</li>
+                        <li><strong>Fixed:</strong> dispatch timer callbacks to main thread for @Published property access</li>
+                        <li><strong>New:</strong> migrate API key storage from UserDefaults to Keychain</li>
+                        <li><strong>Fixed:</strong> add confirmation dialog for context menu icon restore</li>
+                        <li><strong>Fixed:</strong> show error alert when local icon import fails</li>
+                        <li><strong>Refactor:</strong> reorganize settings tabs, add About view</li>
+                        <li><strong>Fixed:</strong> deduplicate appcast entries on re-release</li>
+                        <li><strong>Fixed:</strong> settings footer text alignment on macOS 26, CI runner to macos-26</li>
+                        <li><strong>Fixed:</strong> sparkle.xml malformed from sed newline issue</li>
+                        <li><strong>Fixed:</strong> CI appcast commit fails on tag checkout (detached HEAD)</li>
+                        <li><strong>Fixed:</strong> replace SwiftUI fileImporter with NSOpenPanel to fix crash (#26, #14)</li>
+                        <li><strong>Refactor:</strong> simplify release.sh to only bump, commit, tag, push</li>
+                        <li>ci: add GitHub Actions build and release workflow</li>
+                        <li><strong>Fixed:</strong> make version bump in release script more robust</li>
+                        <li><strong>Fixed:</strong> update SUPublicEDKey to match current signing key</li>
+                        <li>Revert &quot;release: v1.3.0&quot;</li>
+                        <li><strong>Fixed:</strong> use git add -f for gitignored project file in release script</li>
+                        <li><strong>Fixed:</strong> use hdiutil instead of create-dmg for DMG creation</li>
+                        <li><strong>New:</strong> add restore default icon functionality</li>
+                        <li><strong>New:</strong> automate sudoers setup via macOS admin password dialog</li>
+                        <li><strong>Perf:</strong> replace debug print() with os.Logger or remove</li>
+                        <li><strong>Fixed:</strong> icons not loading when scrolling sidebar quickly</li>
+                        <li><strong>Fixed:</strong> sudoers check grep pattern broken by over-aggressive regex escaping</li>
+                        <li><strong>Fixed:</strong> thread safety and performance improvements</li>
+                        <li><strong>Fixed:</strong> critical security and reliability issues</li>
+                        <li><strong>Fixed:</strong> false positive app update detection triggering unnecessary restores</li>
+                        <li><strong>Fixed:</strong> require selection and confirmation before clearing icon cache</li>
+                        <li><strong>Perf:</strong> async icon loading in sidebar to eliminate scroll jank</li>
+                        <li><strong>Refactor:</strong> modernize settings UI with grouped form style</li>
+                        <li><strong>Refactor:</strong> reorganize toolbar buttons with native controls</li>
+                        <li><strong>Perf:</strong> reduce memory footprint and CPU wake-ups across foreground/background</li>
+                        <li>i18n: migrate to String Catalog and remove legacy .strings files</li>
+                        <li>i18n: complete localization audit - remove old files, wrap hardcoded strings</li>
+                        <li><strong>Fixed:</strong> resolve all compiler warnings</li>
+                        <li><strong>Refactor:</strong> reorganize project file structure into logical groups</li>
+                        <li><strong>Refactor:</strong> extract duplicated setup-check logic and remove hardcoded fallback</li>
+                        <li><strong>Fixed:</strong> improve thread safety in IconCacheManager and fix safeShell deadlock</li>
+                        <li><strong>Refactor:</strong> remove dead code and replace deprecated NSUserNotification API</li>
+                        <li><strong>Fixed:</strong> replace fatalError, force unwraps, and missing bounds checks to prevent crashes</li>
+                        <li>refector: remove unused png</li>
+                        <li><strong>Docs:</strong> update README</li>
+                        <li><strong>Fixed:</strong> missign 120, 119</li>
+                        <li><strong>Fixed:</strong> 121 missign</li>
+                        <li>fix 121</li>
+                        <li>121</li>
+                        <li><strong>Fixed:</strong> 120</li>
+                        <li>bump: v1.2.0</li>
+                        <li><strong>New:</strong> Update v1.1.9 and enhance app item handling</li>
+                        <li>Fix: Resolved the Sparkle updater startup error popup.</li>
+                        <li>bump v1.1.7</li>
+                        <li><strong>New:</strong> iconList refresh</li>
+                        <li><strong>New:</strong> Implement user-managed application folder</li>
+                        <li><strong>Refactor:</strong> cleanup</li>
+                        <li><strong>New:</strong> fix apps detection. From `LaunchPadManagerDBHelper.AppInfo` to custom script</li>
+                        <li>bump v1.1.6</li>
+                        <li>Refactor: replace timers with DispatchSource and tighten cached app detection Feat: refresh icon lists via explicit trigger and toolbar button Chore: actor-ify IconImageLoader and switch network prints to os.Logger</li>
+                        <li><strong>Refactor:</strong> Improve icon loading performance with shared caching</li>
+                        <li>bump v1.1.5</li>
+                        <li><strong>Fixed:</strong> macOS 26 iconlist page button display issue</li>
+                        <li>-</li>
+                        <li>implement LRU for icon display cache</li>
+                        <li>add cache mechanism for icon browsing</li>
+                        <li>add Liquid Glass icon style</li>
+                        <li><strong>New:</strong> update README files to include video tutorial links for sudo permissions</li>
+                        <li><strong>New:</strong> update README files to include video tutorial links for sudo permissions</li>
+                        <li><strong>New:</strong> replace YouTube iframe with image links in README files for sudo instructions</li>
+                        <li><strong>New:</strong> replace video links with embedded YouTube players in README files</li>
+                        <li><strong>New:</strong> update README files to include video instructions for sudo permissions</li>
+                        <li>Update README.md</li>
+                        <li><strong>Fixed:</strong> malware warming</li>
+                        <li>beta version for v1.1.2</li>
+                        <li>Memory Safety Update</li>
+                        <li><strong>New:</strong> Add Japanese and Traditional Chinese language support, update language handling</li>
+                        <li>Update issue templates</li>
+                        <li><strong>Refactor:</strong> Improve async handling and error messaging in icon management</li>
+                        <li>**NEW**: Command line interface for icon management 🖥️ **NEW**: Import/export configurations via CLI 🧰 **NEW**: Install CLI tool directly from Settings 🖱️ **NEW**: Integration with dotfiles for automation ⚙️</li>
+                        <li><strong>New:</strong> Add CLI support with configuration import/export and management features</li>
+                        <li>Add Star history</li>
+                        <li>Resolving macOS 13 Compatibility</li>
+                        <li>CleanUp</li>
+                        <li><strong>New:</strong> Add configuration import/export functionality and update version to 1.0.5</li>
+                        <li>Update README</li>
+                        <li><strong>Refactor:</strong> Improve code comments for clarity and ensure backward compatibility</li>
+                        <li><strong>New:</strong> Implement background service mode with customizable restore intervals</li>
+                        <li>Add background service support and UI enhancements</li>
+                        <li>Icon Cache Support</li>
+                        <li>remove sparkle for 1.0.0</li>
+                        <li>tesk sparkle 2</li>
+                        <li>test sprakle</li>
+                        <li>FIX BUGS</li>
+                        <li>更新 IconChanger 的发布信息，将版本号更新至 1.0.1，修改了下载链接格式，并将更新描述中的中文内容翻译为英文，确保信息一致性。</li>
+                        <li>更新项目版本至 1.0.1，添加新版本的发布信息，包括图标加载过程改进、状态指示器、无效图标移除及图标计数器显示等功能，同时修复部分图标加载失败的问题。</li>
+                        <li>更新 ChangeView，新增 validIcons 数组以管理有效图标，优化图标加载和状态更新逻辑。</li>
+                        <li>更新 ChangeView、IconRes 和 ImageView 相关文件，添加图标加载状态管理和别名设置功能，同时优化了本地化字符串支持。</li>
+                        <li>更新项目文件，添加 IconChanger.app 的引用，并将营销版本号更改为 1.0.0。</li>
+                        <li>更新自动更新器信息，添加了新版本 1.0.0 的发布信息，包括多语言支持和用户界面改进。同时更新了 Info.plist 中的 Sparkle URL 和项目文件中的应用路径。</li>
+                        <li>Update file contributors information, adding Bengerthelorf&#x27;s modification record. Also update README to reflect the changes.</li>
+                        <li>New API and setting page</li>
+                        <li>Organize SettingsView</li>
+                        <li>Support permissions manage</li>
+                        <li>Minimize the use of permissions.</li>
+                        <li>New way to implement AliasName</li>
+                        <li>ImageView(s) fits to NavigationView</li>
+                        <li>ChangeView fits to NavigationView</li>
+                        <li>IconList change to NavigationView</li>
+                        <li>support french</li>
+                        <li>localization for readme</li>
+                        <li>localization</li>
+                        <li>sparkle</li>
+                        <li>alias update</li>
+                        <li>readme updated</li>
+                        <li>fix</li>
+                        <li>fix</li>
+                        <li>fix</li>
+                        <li>fix</li>
+                        <li>document</li>
+                        <li>improve</li>
+                        <li>bug fix</li>
+                        <li>fix</li>
+                        <li>fix</li>
+                        <li>fix</li>
+                        <li>fix sparkle</li>
+                        <li>sparkle</li>
+                        <li>improve search engine</li>
+                        <li>fix</li>
+                        <li>MIT License</li>
+                        <li>fix multi-task problem</li>
+                        <li>support macOS 12.3</li>
+                        <li>grammar fix</li>
+                        <li>acknowledge</li>
+                        <li>bug fix</li>
+                        <li>Bug Fix</li>
+                        <li>Sparkle</li>
+                        <li>bug fix</li>
+                        <li>* improve search speed * improve search accuracy</li>
+                        <li>icon list view now shows sorted results</li>
+                        <li>* Alias Updated * Sparkle Fixed * New Designed Menu</li>
+                        <li>bug fix</li>
+                        <li>update</li>
+                        <li>bug fix #7</li>
+                        <li>sparkle</li>
+                        <li>choose icon from local</li>
+                        <li>bug fix</li>
+                        <li>use drop to set image</li>
+                        <li>fix</li>
+                        <li>update</li>
+                        <li>fix</li>
+                        <li>sparkle</li>
+                        <li>bug fix</li>
+                        <li>bug fix</li>
+                        <li>use fileicon</li>
+                        <li>query improve</li>
+                        <li>install heper tool by hand</li>
+                        <li>fix</li>
+                        <li>feed url</li>
+                        <li>sparkle</li>
+                        <li>sort by donwloads</li>
+                        <li>small fix</li>
+                        <li>readme update</li>
+                        <li>alias improve and search improve</li>
+                        <li>only one time password</li>
+                        <li>use touch id</li>
+                        <li>change back</li>
+                        <li>Remove Icon from Launchpad</li>
+                        <li>refresh when background</li>
+                        <li>grid fixed</li>
+                        <li>queryhost problem solved</li>
+                        <li>to new version</li>
+                        <li>bug fix of in app icon</li>
+                        <li>refresh icon list</li>
+                        <li>use alias name if have</li>
+                        <li>alias setting view</li>
+                        <li>more icons and stronger search</li>
+                        <li>change the way of get apps</li>
+                        <li>high quality app icon</li>
+                        <li>UI Improve</li>
+                        <li>bug fix and additional folder</li>
+                        <li>bug fix and additional folder</li>
+                        <li>more icons</li>
+                        <li>improve</li>
+                        <li>fix</li>
+                        <li>update</li>
+                        <li>fix</li>
+                        <li>own query</li>
+                        <li>use macosicon</li>
+                        <li>fix</li>
+                        <li>fix</li>
+                        <li>readme</li>
+                        <li>update</li>
+                        <li>readme</li>
+                        <li>search</li>
+                        <li>first</li>
+                        <li>Initial Commit</li>
+                    </ul>
+                        ]]>
+                    </description>
+                </item>
     </channel>
 </rss>
