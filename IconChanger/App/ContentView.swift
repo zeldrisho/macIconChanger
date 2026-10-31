@@ -18,7 +18,6 @@ struct ContentView: View {
     @State private var hasPresentedManualModeAlert = false
     @State private var showPermissionRepairError = false
 
-    /// Displays application browsing or setup guidance for the current setup health.
     var body: some View {
         Group {
             switch setupMonitor.health {
@@ -51,17 +50,18 @@ struct ContentView: View {
                      .padding()
                  }
 
-            case .missingHelperFiles(let missingFiles):
+            case .missingHelperFiles:
                  VStack {
                      Image(systemName: "exclamationmark.triangle.fill")
                          .resizable().scaledToFit().frame(width: 40, height: 40).foregroundColor(.orange)
                          .padding(.bottom)
-                     Text("Helper Files Missing")
+                     Text("Finish Setup")
                          .font(.title2.bold())
-                     Text(String(format: NSLocalizedString("helper_files_missing_message_format", comment: "Message shown when helper files are missing. %@ is the list of files."), missingFiles.joined(separator: "\n")))                         .multilineTextAlignment(.center)
+                     Text("Install IconChanger's helper to enable icon changes. macOS will ask for administrator approval.")
+                         .multilineTextAlignment(.center)
                          .foregroundColor(.secondary)
                          .padding()
-                      Button("Retry Setup Check") {
+                      Button("Install Helper Files") {
                            repairHelperFiles()
                       }
                       .padding(.top)
@@ -88,9 +88,6 @@ struct ContentView: View {
                      .padding(.top)
                  }
                  .padding()
-
-            case .manualMode:
-                IconList()
 
             case .needsLegacyPermissionCleanup:
                  VStack(spacing: 15) {
@@ -130,7 +127,47 @@ struct ContentView: View {
                  }
                  .padding()
 
-            case .ready:
+            case .needsAppManagementPermission:
+                 VStack(spacing: 15) {
+                      Image(systemName: "app.badge.checkmark")
+                          .resizable().scaledToFit().frame(width: 40, height: 40).foregroundColor(.orange)
+                          .padding(.bottom, 5)
+                     Text("App Management Permission")
+                         .font(.title2.bold())
+                     Text("IconChanger needs App Management permission to modify app icons.\nPlease enable it in System Settings, then come back and click the button below.")
+                          .multilineTextAlignment(.center)
+                          .foregroundColor(.secondary)
+                         .padding(.horizontal)
+
+                     Button {
+                         iconManager.requestAppManagementPermission { granted in
+                             if granted {
+                                 checkFullSetup()
+                             }
+                         }
+                     } label: {
+                         Label("Request Permission", systemImage: "lock.open.fill")
+                     }
+                     .controlSize(.large)
+                     .padding(.top, 5)
+
+                     Button {
+                         NSWorkspace.shared.openLocationService(for: .appManagement)
+                     } label: {
+                         Label("Open System Settings", systemImage: "gear")
+                     }
+                     .controlSize(.large)
+
+                     Button {
+                         checkFullSetup()
+                     } label: {
+                         Label("I've Enabled It", systemImage: "checkmark.circle")
+                     }
+                     .controlSize(.large)
+                 }
+                 .padding()
+
+            case .ready, .manualMode:
                 IconList()
 
             case .error(let errorMessage):
@@ -157,7 +194,9 @@ struct ContentView: View {
         }
         .onAppear {
             presentManualModeAlertIfNeeded(setupMonitor.health)
-            checkFullSetup()
+            if setupMonitor.health == .checking && !setupMonitor.isChecking {
+                checkFullSetup()
+            }
         }
         .onChange(of: setupMonitor.health) { health in
             presentManualModeAlertIfNeeded(health)
@@ -267,5 +306,17 @@ struct ContentView: View {
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView()
+    }
+}
+
+extension NSWorkspace {
+
+    enum SystemServiceType: String {
+        case appManagement = "x-apple.systempreferences:com.apple.preference.security?Privacy_AppBundles"
+    }
+
+    func openLocationService(for type: SystemServiceType) {
+        guard let url = URL(string: type.rawValue) else { return }
+        NSWorkspace.shared.open(url)
     }
 }

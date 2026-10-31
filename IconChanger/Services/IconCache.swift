@@ -16,12 +16,21 @@ struct IconCache: Codable, Identifiable {
     var appVersion: String?
 
     static func currentVersion(for appPath: String) -> String? {
-        let bundle = Bundle(path: appPath)
+        // Bundle caches Info.plist values while IconChanger stays running.
+        // Read the file again so background checks see an app replaced in place.
+        let infoPlistURL = URL(fileURLWithPath: appPath, isDirectory: true)
+            .appendingPathComponent("Contents/Info.plist")
+        guard let data = try? Data(contentsOf: infoPlistURL),
+              let info = try? PropertyListSerialization.propertyList(
+                from: data,
+                options: [],
+                format: nil
+              ) as? [String: Any] else {
+            return nil
+        }
         return CachedAppVersionPolicy.preferredVersion(
-            bundleVersion: bundle?.object(forInfoDictionaryKey: "CFBundleVersion") as? String,
-            shortVersion: bundle?.object(
-                forInfoDictionaryKey: "CFBundleShortVersionString"
-            ) as? String
+            bundleVersion: info["CFBundleVersion"] as? String,
+            shortVersion: info["CFBundleShortVersionString"] as? String
         )
     }
 
@@ -57,6 +66,17 @@ struct IconCache: Codable, Identifiable {
             executableModifiedAt: executableModifiedAt
         )
     }
+}
+
+struct IconUndoSnapshot {
+    let image: NSImage
+    let hadCustomIcon: Bool
+    let cache: IconCache?
+}
+
+struct PreparedIconCache {
+    let record: IconCache
+    let url: URL
 }
 
 class IconCacheManager {
@@ -137,7 +157,7 @@ class IconCacheManager {
         UserDefaults.standard.set(encoded, forKey: cacheKey)
     }
 
-    func cacheIcon(image: NSImage, for appPath: String, appName: String) throws -> URL {
+    func prepareIcon(image: NSImage, for appPath: String, appName: String) throws -> PreparedIconCache {
         let iconFileName = "\(UUID().uuidString).png"
         let iconURL = Self.cacheDirectory.appendingPathComponent(iconFileName)
         let context = DiagnosticsContext(
@@ -173,26 +193,29 @@ class IconCacheManager {
             appVersion: IconCache.currentVersion(for: appPath)
         )
 
-        let snapshot: [String: IconCache] = {
-            lock.lock()
-            defer { lock.unlock() }
-            cachedIcons[appPath] = iconCache
-            return cachedIcons
-        }()
-        persistCache(snapshot)
+        return PreparedIconCache(record: iconCache, url: iconURL)
+    }
 
-        DiagnosticsLogger.shared.log(
-            .operation,
-            phase: "icon_cache_write.completed",
-            context: context,
-            durationMilliseconds: timer.elapsedMilliseconds,
-            details: [
-                "app_version": iconCache.appVersion ?? "unknown",
-                "entry_count": String(snapshot.count),
-            ]
-        )
+    func commitPreparedIcon(_ prepared: PreparedIconCache) throws {
+        lock.lock()
+        defer { lock.unlock() }
+        var snapshot = cachedIcons
+        snapshot[prepared.record.appPath] = prepared.record
+        try persistCacheOrThrow(snapshot)
+        cachedIcons = snapshot
+    }
 
-        return iconURL
+    func restoreRecord(_ record: IconCache?, for appPath: String) throws {
+        lock.lock()
+        defer { lock.unlock() }
+        var snapshot = cachedIcons
+        snapshot[appPath] = record
+        try persistCacheOrThrow(snapshot)
+        cachedIcons = snapshot
+    }
+
+    func discardPreparedIcon(_ prepared: PreparedIconCache) {
+        try? FileManager.default.removeItem(at: prepared.url)
     }
 
     func getIconCache(for appPath: String) -> IconCache? {

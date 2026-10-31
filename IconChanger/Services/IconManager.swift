@@ -97,6 +97,13 @@ class IconManager: ObservableObject {
     }
     
     func loadAppItems() -> [AppItem] {
+        if UIReviewMode.isEnabled {
+            return ["/System/Applications/Notes.app", "/System/Applications/Mail.app", "/System/Applications/Calendar.app", "/Applications/Safari.app", "/Applications/Arc.app"]
+                .filter { FileManager.default.fileExists(atPath: $0) }
+                .map { AppItem(name: URL(fileURLWithPath: $0).deletingPathExtension().lastPathComponent,
+                               url: URL(fileURLWithPath: $0), originalAppInfo: nil) }
+                .sorted { $0.name < $1.name }
+        }
         let diagnosticsContext = DiagnosticsContext(
             operation: .discovery,
             source: .system
@@ -225,6 +232,7 @@ class IconManager: ObservableObject {
     /// Installs bundled helper files with administrator approval when integrity checks fail.
     /// Rejects symbolic links at installation paths and logs installation failures.
     func ensureHelperFilesCopied() {
+        guard !UIReviewMode.isEnabled else { return }
         let diagnosticsContext = DiagnosticsContext(operation: .setup)
         let timer = DiagnosticsTimer()
         diagnostics.log(
@@ -421,6 +429,7 @@ class IconManager: ObservableObject {
     }
 
     private func ensureSetupCompleted(allowRepair: Bool = true) throws {
+        if UIReviewMode.isEnabled { return }
         if allowRepair {
             ensureHelperFilesCopied()
         }
@@ -498,6 +507,33 @@ class IconManager: ObservableObject {
 
     /// Removes an app's custom icon and clears its cached and appearance configurations.
     /// Throws if the icon operation fails.
+    func captureUndoSnapshot(for app: AppItem) -> IconUndoSnapshot {
+        let image = NSWorkspace.shared.icon(forFile: app.url.path).copy() as! NSImage
+        let width = max(image.representations.map(\.pixelsWide).max() ?? 0, Int(image.size.width), 1)
+        let height = max(image.representations.map(\.pixelsHigh).max() ?? 0, Int(image.size.height), 1)
+        image.size = NSSize(width: width, height: height)
+        return IconUndoSnapshot(
+            image: image,
+            hadCustomIcon: hasCustomIcon(app: app),
+            cache: IconCacheManager.shared.getIconCache(for: app.id)
+        )
+    }
+
+    func restoreUndoSnapshot(_ snapshot: IconUndoSnapshot, app: AppItem) throws {
+        let context = DiagnosticsContext(operation: .replace, appName: app.name, appPath: app.id)
+        if snapshot.hadCustomIcon {
+            try applyIcon(snapshot.image, to: app, diagnosticsContext: context)
+        } else {
+            try runHelperRemove(appPath: app.id, diagnosticsContext: context)
+        }
+        try IconCacheManager.shared.restoreRecord(snapshot.cache, for: app.id)
+        auditLog(operation: "undo_icon", appName: app.name, appPath: app.id)
+        Task { @MainActor in
+            AppIconCache.shared.remove(for: app.url)
+            self.iconRefreshTrigger = UUID()
+        }
+    }
+
     func removeIcon(from app: AppItem) throws {
         let appPath = app.url.universalPath()
         let context = DiagnosticsContext(
@@ -566,22 +602,13 @@ class IconManager: ObservableObject {
         diagnostics.log(.operation, phase: "replace.start", context: context)
 
         do {
-            let cacheTimer = DiagnosticsTimer()
-            diagnostics.log(.step, phase: "cache_write.start", context: context)
-            _ = try IconCacheManager.shared.cacheIcon(
-                image: image,
-                for: appPath,
-                appName: app.name
+            let cache = IconCacheManager.shared
+            try IconApplicationTransaction.perform(
+                prepare: { try cache.prepareIcon(image: image, for: appPath, appName: app.name) },
+                apply: { _ in try self.applyIcon(image, to: app, diagnosticsContext: context) },
+                commit: { try cache.commitPreparedIcon($0) },
+                discard: { cache.discardPreparedIcon($0) }
             )
-            diagnostics.log(
-                .performance,
-                phase: "cache_write.finish",
-                context: context,
-                durationMilliseconds: cacheTimer.elapsedMilliseconds
-            )
-            logger.log("Icon cached for \(app.name)")
-
-            try applyIcon(image, to: app, diagnosticsContext: context)
 
             auditLog(operation: "set_icon", appName: app.name, appPath: appPath)
 
@@ -1124,6 +1151,13 @@ class IconManager: ObservableObject {
     }
 
     func getIcons(_ app: AppItem, style: IconStyle = .all, forceRefresh: Bool = false) async throws -> [IconRes] {
+        if UIReviewMode.isEnabled {
+            return (1...18).compactMap { index in
+                IconRes(appName: app.name + " \(index)",
+                        icnsUrl: URL(string: "https://ui-review.invalid/\(index).icns")!,
+                        lowResPngUrl: URL(string: "https://ui-review.invalid/\(index).png")!, downloads: index * 10)
+            }
+        }
         let appName = app.name
         let urlName = app.url.deletingPathExtension().lastPathComponent
         let bundleName = try getAppBundleName(app)
@@ -1218,6 +1252,13 @@ class IconManager: ObservableObject {
         imagePath: String,
         diagnosticsContext: DiagnosticsContext? = nil
     ) throws {
+        if URL(fileURLWithPath: appPath).pathExtension.lowercased() != "app" {
+            guard let image = NSImage(contentsOfFile: imagePath) else {
+                throw ImageSaveError.cgImageConversionFailed
+            }
+            try setFolderIcon(image, at: URL(fileURLWithPath: appPath))
+            return
+        }
         let context =
             diagnosticsContext
             ?? DiagnosticsContext(
@@ -1238,6 +1279,10 @@ class IconManager: ObservableObject {
         appPath: String,
         diagnosticsContext: DiagnosticsContext
     ) throws {
+        if URL(fileURLWithPath: appPath).pathExtension.lowercased() != "app" {
+            try setFolderIcon(nil, at: URL(fileURLWithPath: appPath))
+            return
+        }
         try runHelper(
             arguments: ["--remove", fileiconURL.path, appPath],
             operation: "remove",
@@ -1248,12 +1293,34 @@ class IconManager: ObservableObject {
 
     /// Runs an icon operation as the current user for owned, writable apps, or via sudo otherwise.
     /// Protected targets require completed helper setup. Throws on setup or execution failure.
+    /// User-selected folders use the public API with the user's existing access.
+    /// The administrator helper remains restricted to application bundles.
+    private func setFolderIcon(_ image: NSImage?, at url: URL) throws {
+        try UIReviewMode.requireLiveApplication()
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        let values = try url.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
+        guard values.isDirectory == true, values.isSymbolicLink != true else {
+            throw NSError(domain: "IconManager", code: 41, userInfo: [
+                NSLocalizedDescriptionKey: NSLocalizedString("Select an existing folder to change its icon.", comment: "Invalid folder icon target")
+            ])
+        }
+        guard NSWorkspace.shared.setIcon(image, forFile: url.path, options: []) else {
+            throw NSError(domain: "IconManager", code: 42, userInfo: [
+                NSLocalizedDescriptionKey: NSLocalizedString("macOS could not change this folder's icon. Check that the folder is writable and its disk supports custom icons.", comment: "Folder icon write failure")
+            ])
+        }
+        let folder = AppItem(name: url.lastPathComponent, url: url, originalAppInfo: nil)
+        try IconWriteVerification.verify(removing: image == nil, hasCustomIcon: hasCustomIcon(app: folder))
+    }
+
     private func runHelper(
         arguments: [String],
         operation: String,
         appPath: String,
         diagnosticsContext: DiagnosticsContext
     ) throws {
+        try UIReviewMode.requireLiveApplication()
         let helperToolPath = self.helperScriptURL.path
         let helperTimer = DiagnosticsTimer()
         let targetAttributes = try? FileManager.default.attributesOfItem(atPath: appPath)
@@ -1473,6 +1540,7 @@ class IconManager: ObservableObject {
                 "expected_custom_icon": String(operation != "remove"),
             ]
         )
+        try IconWriteVerification.verify(removing: operation == "remove", hasCustomIcon: customIconPresent)
         diagnostics.log(
             .performance,
             phase: "helper.finish",
@@ -1736,6 +1804,7 @@ class IconManager: ObservableObject {
     func configureSudoers(
         allowManagedCompatibility: Bool = false
     ) throws -> SudoersConfigurationResult {
+        try UIReviewMode.requireLiveApplication()
         let diagnosticsContext = DiagnosticsContext(operation: .setup)
         let timer = DiagnosticsTimer()
         diagnostics.log(
@@ -2282,6 +2351,85 @@ class IconManager: ObservableObject {
         }
     }
 
+    private func diagnosticName(for status: AppManagementStatus) -> String {
+        switch status {
+        case .authorized:
+            return "authorized"
+        case .denied:
+            return "denied"
+        case .notDetermined:
+            return "not_determined"
+        case .unknown:
+            return "unknown"
+        }
+    }
+
+    // MARK: - App Management (TCC) Permission
+
+    private static let tccHandle: UnsafeMutableRawPointer? = {
+        dlopen("/System/Library/PrivateFrameworks/TCC.framework/Versions/A/TCC", RTLD_NOW)
+    }()
+
+    private static let tccPreflight: (@convention(c) (CFString, CFDictionary?) -> Int)? = {
+        guard let handle = tccHandle, let sym = dlsym(handle, "TCCAccessPreflight") else { return nil }
+        return unsafeBitCast(sym, to: (@convention(c) (CFString, CFDictionary?) -> Int).self)
+    }()
+
+    private static let tccRequest: (@convention(c) (CFString, CFDictionary?, @escaping (Bool) -> Void) -> Void)? = {
+        guard let handle = tccHandle, let sym = dlsym(handle, "TCCAccessRequest") else { return nil }
+        return unsafeBitCast(sym, to: (@convention(c) (CFString, CFDictionary?, @escaping (Bool) -> Void) -> Void).self)
+    }()
+
+    private static let tccServiceAppBundles = "kTCCServiceSystemPolicyAppBundles" as CFString
+
+    enum AppManagementStatus {
+        case authorized, denied, notDetermined, unknown
+    }
+
+    func appManagementStatus() -> AppManagementStatus {
+        guard Bundle.main.bundlePath.hasPrefix("/Applications/") else { return .authorized }
+        guard let preflight = Self.tccPreflight else { return .unknown }
+
+        // 0 = authorized, 1 = denied, 2 = not determined
+        switch preflight(Self.tccServiceAppBundles, nil) {
+        case 0: return .authorized
+        case 1: return .denied
+        case 2: return .notDetermined
+        default: return .unknown
+        }
+    }
+
+    // Triggers the system TCC prompt if status is notDetermined.
+    func requestAppManagementPermission(completion: @escaping (Bool) -> Void) {
+        guard !UIReviewMode.isEnabled else { completion(false); return }
+        let context = DiagnosticsContext(operation: .permission)
+        let timer = DiagnosticsTimer()
+        diagnostics.log(
+            .operation,
+            phase: "app_management_request.start",
+            context: context
+        )
+        guard let request = Self.tccRequest else {
+            diagnostics.log(
+                .failure,
+                phase: "app_management_request.unavailable",
+                context: context,
+                durationMilliseconds: timer.elapsedMilliseconds
+            )
+            completion(false)
+            return
+        }
+        request(Self.tccServiceAppBundles, nil) { granted in
+            DiagnosticsLogger.shared.log(
+                granted ? .operation : .failure,
+                phase: "app_management_request.completed",
+                context: context,
+                durationMilliseconds: timer.elapsedMilliseconds,
+                details: ["granted": String(granted)]
+            )
+            DispatchQueue.main.async { completion(granted) }
+        }
+    }
 }
 
 extension LaunchPadManagerDBHelper.AppInfo: @retroactive Identifiable {
