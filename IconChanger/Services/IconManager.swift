@@ -505,8 +505,7 @@ class IconManager: ObservableObject {
         )
     }
 
-    /// Removes an app's custom icon and clears its cached and appearance configurations.
-    /// Throws if the icon operation fails.
+    /// Captures the displayed icon, custom-icon state, and cache record for a later undo.
     func captureUndoSnapshot(for app: AppItem) -> IconUndoSnapshot {
         let image = NSWorkspace.shared.icon(forFile: app.url.path).copy() as! NSImage
         let width = max(image.representations.map(\.pixelsWide).max() ?? 0, Int(image.size.width), 1)
@@ -519,6 +518,8 @@ class IconManager: ObservableObject {
         )
     }
 
+    /// Restores the captured icon state and cache record, then refreshes the displayed icon.
+    /// Propagates icon operation and cache metadata errors; a cache error can follow a successful icon change.
     func restoreUndoSnapshot(_ snapshot: IconUndoSnapshot, app: AppItem) throws {
         let context = DiagnosticsContext(operation: .replace, appName: app.name, appPath: app.id)
         if snapshot.hadCustomIcon {
@@ -576,8 +577,9 @@ class IconManager: ObservableObject {
         }
     }
 
-    /// Caches and applies an image to an app, recording its source in history and diagnostics.
-    /// Throws if caching or applying the image fails.
+    /// Applies an image and updates the persistent cache. Records history unless the source is history.
+    /// Throws if preparing the cache, applying the icon, or committing the cache fails.
+    /// A commit failure can occur after the icon has already changed.
     func setImage(
         _ image: NSImage,
         app: AppItem,
@@ -1247,6 +1249,8 @@ class IconManager: ObservableObject {
         return (plist?["CFBundleDisplayName"] as? String) ?? (plist?["CFBundleName"] as? String)
     }
     
+    /// Sets an icon from an image file. Paths ending in `.app` use the app helper route;
+    /// other paths use the folder API. Propagates image loading and icon operation failures.
     func runHelperTool(
         appPath: String,
         imagePath: String,
@@ -1291,10 +1295,9 @@ class IconManager: ObservableObject {
         )
     }
 
-    /// Runs an icon operation as the current user for owned, writable apps, or via sudo otherwise.
-    /// Protected targets require completed helper setup. Throws on setup or execution failure.
-    /// User-selected folders use the public API with the user's existing access.
-    /// The administrator helper remains restricted to application bundles.
+    /// Sets or removes a folder's custom icon using the user's existing access; `nil` removes it.
+    /// Rejects symbolic links and throws in UI review mode, for unreadable or invalid folders,
+    /// or if the write or verification fails.
     private func setFolderIcon(_ image: NSImage?, at url: URL) throws {
         try UIReviewMode.requireLiveApplication()
         let scoped = url.startAccessingSecurityScopedResource()
@@ -1314,6 +1317,9 @@ class IconManager: ObservableObject {
         try IconWriteVerification.verify(removing: image == nil, hasCustomIcon: hasCustomIcon(app: folder))
     }
 
+    /// Runs an app icon operation as the current user for owned, writable apps, or via sudo otherwise.
+    /// Protected targets require helper setup. Throws on setup or execution failure; privileged writes
+    /// also throw if the observed custom-icon state does not match the requested operation.
     private func runHelper(
         arguments: [String],
         operation: String,
@@ -2386,6 +2392,8 @@ class IconManager: ObservableObject {
         case authorized, denied, notDetermined, unknown
     }
 
+    /// Returns the App Management permission status, or `unknown` if it cannot be determined.
+    /// Builds outside `/Applications/` are treated as authorized.
     func appManagementStatus() -> AppManagementStatus {
         guard Bundle.main.bundlePath.hasPrefix("/Applications/") else { return .authorized }
         guard let preflight = Self.tccPreflight else { return .unknown }
@@ -2400,6 +2408,9 @@ class IconManager: ObservableObject {
     }
 
     // Triggers the system TCC prompt if status is notDetermined.
+    /// Requests App Management permission, potentially showing a system prompt.
+    /// Calls `completion` with `false` immediately in UI review mode or when the request is unavailable;
+    /// otherwise calls it on the main queue with the system's result.
     func requestAppManagementPermission(completion: @escaping (Bool) -> Void) {
         guard !UIReviewMode.isEnabled else { completion(false); return }
         let context = DiagnosticsContext(operation: .permission)

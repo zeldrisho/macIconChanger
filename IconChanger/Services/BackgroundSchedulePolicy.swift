@@ -10,22 +10,28 @@ enum BackgroundSchedulePolicy {
     static let restoreIntervalHoursRange = 1...(24 * 365)
     static let checkIntervalMinutesRange = 1...(60 * 24 * 365)
 
+    /// Parses an interval in hours, accepting values from 1 through 8,760 after trimming whitespace.
+    /// Returns `nil` for invalid or out-of-range input.
     static func validRestoreInterval(_ text: String) -> Int? {
         guard let value = Int(text.trimmingCharacters(in: .whitespacesAndNewlines)),
               restoreIntervalHoursRange.contains(value) else { return nil }
         return value
     }
 
+    /// Parses an interval in minutes, accepting values from 1 through 525,600 after trimming whitespace.
+    /// Returns `nil` for invalid or out-of-range input.
     static func validCheckInterval(_ text: String) -> Int? {
         guard let value = Int(text.trimmingCharacters(in: .whitespacesAndNewlines)),
               checkIntervalMinutesRange.contains(value) else { return nil }
         return value
     }
 
+    /// Clamps an interval in hours to 1 through 8,760.
     static func normalizedRestoreIntervalHours(_ value: Int) -> Int {
         min(max(value, restoreIntervalHoursRange.lowerBound), restoreIntervalHoursRange.upperBound)
     }
 
+    /// Clamps an interval in minutes to 1 through 525,600.
     static func normalizedCheckIntervalMinutes(_ value: Int) -> Int {
         min(max(value, checkIntervalMinutesRange.lowerBound), checkIntervalMinutesRange.upperBound)
     }
@@ -55,6 +61,7 @@ enum BackgroundVisibilityPolicy {
         let showInMenuBar: Bool
     }
 
+    /// Keeps at least one surface visible, enabling the other when the changed preference hides the last one.
     static func resolved(
         showInDock: Bool,
         showInMenuBar: Bool,

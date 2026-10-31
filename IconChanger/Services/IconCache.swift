@@ -15,6 +15,8 @@ struct IconCache: Codable, Identifiable {
     let timestamp: Date
     var appVersion: String?
 
+    /// Reads the app's current build version, falling back to its short version.
+    /// Returns `nil` if metadata cannot be read or neither version is a nonblank string.
     static func currentVersion(for appPath: String) -> String? {
         // Bundle caches Info.plist values while IconChanger stays running.
         // Read the file again so background checks see an app replaced in place.
@@ -157,6 +159,8 @@ class IconCacheManager {
         UserDefaults.standard.set(encoded, forKey: cacheKey)
     }
 
+    /// Writes an image file without changing the active cache record.
+    /// Returns the prepared record and file URL, or throws if saving the image fails.
     func prepareIcon(image: NSImage, for appPath: String, appName: String) throws -> PreparedIconCache {
         let iconFileName = "\(UUID().uuidString).png"
         let iconURL = Self.cacheDirectory.appendingPathComponent(iconFileName)
@@ -196,6 +200,7 @@ class IconCacheManager {
         return PreparedIconCache(record: iconCache, url: iconURL)
     }
 
+    /// Replaces the app's cache record with the prepared record; propagates metadata encoding errors.
     func commitPreparedIcon(_ prepared: PreparedIconCache) throws {
         lock.lock()
         defer { lock.unlock() }
@@ -205,6 +210,8 @@ class IconCacheManager {
         cachedIcons = snapshot
     }
 
+    /// Restores a cache record, or removes it when `record` is `nil`, without deleting its image file.
+    /// Propagates metadata encoding errors.
     func restoreRecord(_ record: IconCache?, for appPath: String) throws {
         lock.lock()
         defer { lock.unlock() }
@@ -214,6 +221,7 @@ class IconCacheManager {
         cachedIcons = snapshot
     }
 
+    /// Attempts to delete a prepared image file; deletion errors are ignored.
     func discardPreparedIcon(_ prepared: PreparedIconCache) {
         try? FileManager.default.removeItem(at: prepared.url)
     }

@@ -22,6 +22,10 @@ final class SetupMonitor: ObservableObject {
 
     private init() {}
 
+    /// Checks folder access and helper health, then publishes the result.
+    /// Outside preview modes, requests received during a check trigger a fresh check before queued
+    /// completions run on the main actor. Preview modes publish their configured result immediately.
+    /// Missing or unavailable helpers select manual mode; legacy grants require cleanup.
     func check(
         source: DiagnosticsSource = .system,
         completion: ((SetupHealth) -> Void)? = nil

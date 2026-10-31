@@ -107,7 +107,7 @@ enum AppPaths {
     // MARK: - Migration
 
     /// Moves legacy `~/.iconchanger/` data and pre-bundle-id Application Support contents
-    /// to standard macOS locations. Idempotent and safe to call on every launch.
+    /// to standard macOS locations. Idempotent and safe to call on every launch; does nothing in UI review mode.
     static func migrateLegacyDirectoryIfNeeded() {
         guard !UIReviewMode.isEnabled else { return }
         migrateDotFolderRoot()

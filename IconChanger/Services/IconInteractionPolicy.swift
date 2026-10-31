@@ -78,6 +78,8 @@ enum IconApplicationPolicy {
 
 /// Keep the last successful cache until the helper has accepted the new icon.
 enum IconApplicationTransaction {
+    /// Applies and commits a prepared value. If either step throws, discards the value and rethrows
+    /// the error; a preparation error propagates without calling `discard`.
     static func perform<Prepared>(
         prepare: () throws -> Prepared,
         apply: (Prepared) throws -> Void,
@@ -96,6 +98,8 @@ enum IconApplicationTransaction {
 }
 
 enum DockPreviewPolicy {
+    /// Shows the preview for applications in `always` mode or in the Dock filter,
+    /// except when the mode is `never`.
     static func shouldShow(mode: String, isDockFilter: Bool, isFolderFilter: Bool) -> Bool {
         !isFolderFilter && mode != "never" && (mode == "always" || isDockFilter)
     }
@@ -109,6 +113,7 @@ enum IconWriteVerification {
         }
     }
 
+    /// Throws `Failure` when the observed custom-icon state does not match the requested operation.
     static func verify(removing: Bool, hasCustomIcon: Bool) throws {
         guard hasCustomIcon == !removing else { throw Failure() }
     }

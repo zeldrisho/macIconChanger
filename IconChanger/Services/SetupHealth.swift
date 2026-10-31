@@ -99,6 +99,7 @@ struct SetupCheckQueue {
     private(set) var isChecking = false
     private var needsRecheck = false
 
+    /// Returns `true` when a check can start; otherwise requests a fresh check after the current one.
     mutating func request() -> Bool {
         guard !isChecking else {
             needsRecheck = true
@@ -108,6 +109,7 @@ struct SetupCheckQueue {
         return true
     }
 
+    /// Ends the current check and returns whether another check was requested during it.
     mutating func finish() -> Bool {
         isChecking = false
         let recheck = needsRecheck

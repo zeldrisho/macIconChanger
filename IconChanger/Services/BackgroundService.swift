@@ -1035,6 +1035,8 @@ import os
         return updatedApps
     }
 
+    /// Restores eligible icons for updated apps and refreshes the Dock if any were restored.
+    /// Collects per-app errors in the result; apps without eligible icons are omitted from its counts.
     private func restoreUpdatedApps(_ apps: [AppItem]) async -> IconManager.RestoreResult {
         var result = IconManager.RestoreResult()
         for app in apps {
