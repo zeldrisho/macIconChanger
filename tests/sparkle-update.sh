@@ -21,6 +21,7 @@ cat > "$TEST_DIR/CHANGELOG.md" <<'MARKDOWN'
 ## What's Changed
 
 - fix: escape <script>alert("unsafe")</script> & keep release notes readable
+* feat: GitHub-generated release note
 MARKDOWN
 
 (
@@ -78,6 +79,8 @@ if grep -Fq '<script>' "$TEST_DIR/IconChanger/Resources/sparkle.xml"; then
 fi
 
 grep -Fq '&lt;script&gt;alert(&quot;unsafe&quot;)&lt;/script&gt; &amp;' \
+    "$TEST_DIR/IconChanger/Resources/sparkle.xml"
+grep -Fq '<li><strong>New:</strong> GitHub-generated release note</li>' \
     "$TEST_DIR/IconChanger/Resources/sparkle.xml"
 
 python3 - "$REPO_ROOT/IconChanger/Info.plist" <<'PY'

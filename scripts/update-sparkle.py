@@ -28,7 +28,7 @@ prefix_map = {
 }
 for line in lines:
     line = line.strip()
-    if not line.startswith("- "):
+    if not line.startswith(("- ", "* ")):
         continue
     message = line[2:]
     if message.startswith(("release:", "chore:", "Merge ")):

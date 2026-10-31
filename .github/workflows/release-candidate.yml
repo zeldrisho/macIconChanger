@@ -238,6 +238,7 @@ jobs:
       - name: Sign Sparkle update and create metadata
         env:
           SPARKLE_KEY: ${{ secrets.SPARKLE_EDDSA_KEY }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           test -n "$SPARKLE_KEY"
           SPARKLE_BIN="$PWD/build/DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin"
@@ -256,21 +257,11 @@ jobs:
 
           DMG_SHA256=$(shasum -a 256 "$DMG_PATH" | awk '{print $1}')
           DMG_SIZE=$(stat -f%z "$DMG_PATH")
-          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)
-
-          {
-            echo "## What's Changed"
-            echo
-            if [[ -n "$PREVIOUS_TAG" ]]; then
-              git log --pretty=format:"- %s" "$PREVIOUS_TAG..HEAD" -- \
-                ':!IconChanger/Resources/sparkle.xml'
-              echo
-              echo
-              echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREVIOUS_TAG}...${TAG}"
-            else
-              git log --pretty=format:"- %s"
-            fi
-          } > "$CANDIDATE_DIR/CHANGELOG.md"
+          gh api --method POST "repos/$GITHUB_REPOSITORY/releases/generate-notes" \
+            -f tag_name="$TAG" \
+            -f target_commitish="$SOURCE_SHA" \
+            --jq '.body' > "$CANDIDATE_DIR/CHANGELOG.md"
+          test -s "$CANDIDATE_DIR/CHANGELOG.md"
 
           jq -n \
             --arg version "$VERSION" \
