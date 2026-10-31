@@ -29,6 +29,8 @@ jobs:
   candidate:
     name: Release candidate
     runs-on: macos-latest
+    permissions:
+      contents: write
     env:
       APP_PATH: build/IconChanger.app
       DMG_PATH: build/candidate/IconChanger.dmg

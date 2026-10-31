@@ -83,14 +83,21 @@ final class SetupMonitor: ObservableObject {
             let setupStatus = iconManager.checkSetupStatus(
                 diagnosticsContext: diagnosticsContext
             )
+            let appManagementStatus = iconManager.appManagementStatus()
             let result: SetupHealth
             let details = [
-                "setup_status": Self.setupStatusName(setupStatus)
+                "setup_status": Self.setupStatusName(setupStatus),
+                "app_management_status": Self.appManagementStatusName(appManagementStatus)
             ]
 
             switch setupStatus {
             case .completed:
-                result = .ready
+                switch appManagementStatus {
+                case .denied, .notDetermined:
+                    result = .needsAppManagementPermission
+                case .authorized, .unknown:
+                    result = .ready
+                }
             case .helperFilesMissing(_), .helperFilesOutdated, .sudoersPermissionMissing:
                 result = .manualMode
             case .legacySudoersPermissionPresent:

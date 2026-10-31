@@ -246,7 +246,7 @@ struct IconList: View {
                                     .font(.system(size: 36)).foregroundStyle(.secondary)
                                 Text(appFilter == .folders
                                      ? "Select a folder to customize its icon"
-                                     : "Select an app to customize its icon")
+                                     : "Select an app to see its details")
                                     .font(.title3).foregroundStyle(.secondary)
                                 Text("Choose an item in the sidebar to get started.")
                                     .font(.callout).foregroundStyle(.secondary)

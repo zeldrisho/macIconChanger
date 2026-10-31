@@ -31,12 +31,16 @@ struct ApplicationAliasSettingsView: View {
                 }
 
                 Button(action: {
+                    let previousAliases = aliasNames
                     let removed = aliasNames.filter { selectedAlias.contains($0.id) }
                     aliasNames.removeAll { selectedAlias.contains($0.id) }
-                    selectedAlias.removeAll()
-                    persistAliases()
-                    for alias in removed where !alias.appName.isEmpty {
-                        AliasName.trackRemoval(for: alias.appName)
+                    if persistAliases() {
+                        selectedAlias.removeAll()
+                        for alias in removed where !alias.appName.isEmpty {
+                            AliasName.trackRemoval(for: alias.appName)
+                        }
+                    } else {
+                        aliasNames = previousAliases
                     }
                 }) {
                     Image(systemName: "minus")
@@ -81,14 +85,16 @@ struct ApplicationAliasSettingsView: View {
         }
     }
 
-    private func persistAliases() {
+    @discardableResult
+    private func persistAliases() -> Bool {
         let entries = aliasNames.filter { !$0.appName.trimmingCharacters(in: .whitespaces).isEmpty }
         guard Set(entries.map(\.appName)).count == entries.count else {
             validationMessage = NSLocalizedString("Each app name must be unique. Rename the duplicate before saving.", comment: "Alias validation")
-            return
+            return false
         }
         validationMessage = nil
         AliasNames.save(entries)
+        return true
     }
 }
 

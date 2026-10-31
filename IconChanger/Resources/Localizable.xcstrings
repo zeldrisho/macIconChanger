@@ -33224,6 +33224,24 @@
             "state" : "new",
             "value" : "Monthly API query limit reached (%1$d/%2$d). Resets on the 1st of next month."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已达到每月 API 查询上限（%1$d/%2$d）。将于下月 1 日重置。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已達到每月 API 查詢上限（%1$d/%2$d）。將於下個月 1 日重設。"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已達到每月 API 查詢上限（%1$d/%2$d）。將於下個月 1 日重設。"
+          }
         }
       }
     },
