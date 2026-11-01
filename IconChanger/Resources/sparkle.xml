@@ -3,6 +3,24 @@
     <channel>
         <title>IconChanger</title>
         <item>
+                    <title>Version 1.5.2</title>
+                    <link>https://github.com/zeldrisho/macIconChanger</link>
+                    <sparkle:version>5010502900000</sparkle:version>
+                    <sparkle:shortVersionString>1.5.2</sparkle:shortVersionString>
+                    <pubDate>Sun, 01 Nov 2026 05:25:29 +0000</pubDate>
+                    <enclosure url="https://github.com/zeldrisho/macIconChanger/releases/download/v1.5.2/IconChanger.dmg"
+                    sparkle:edSignature="aRTFoaJGSrDYALVvPx/PcrkGWhZspQ6NRunjoEcv8mWmdLceQ4zZ0CTq9fBmoVnMlvSGE5WyeiONZijKqW9+Bg==" length="8916896"
+                    type="application/octet-stream"/>
+                    <description>
+                        <![CDATA[
+                    <h2>Version 1.5.2</h2>
+                    <ul>
+                        <li><strong>Fixed:</strong> integrate upstream reliability and upgrade Sparkle by @zeldrisho in https://github.com/zeldrisho/macIconChanger/pull/3</li>
+                    </ul>
+                        ]]>
+                    </description>
+                </item>
+        <item>
                     <title>Version 1.5.1</title>
                     <link>https://github.com/zeldrisho/macIconChanger</link>
                     <sparkle:version>40105019000</sparkle:version>
