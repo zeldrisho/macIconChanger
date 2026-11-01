@@ -13,7 +13,24 @@ enum SetupHealth: Equatable {
     case outdatedHelperFiles
     case manualMode
     case needsLegacyPermissionCleanup
+    case needsAppManagementPermission
     case error(String)
+
+    var allowsIconBrowsing: Bool {
+        switch self {
+        case .ready, .manualMode: return true
+        default: return false
+        }
+    }
+
+    var permissionStatusTitle: String {
+        switch self {
+        case .ready: return NSLocalizedString("Ready", comment: "Permission status")
+        case .manualMode: return NSLocalizedString("Manual Mode", comment: "Permission status")
+        case .checking: return NSLocalizedString("Checking…", comment: "Permission status")
+        default: return NSLocalizedString("Needs Attention", comment: "Permission status")
+        }
+    }
 
     var needsAttention: Bool {
         switch self {
@@ -42,7 +59,6 @@ enum SetupHealth: Equatable {
         }
     }
 
-    /// A localized setup status description, or the underlying error message.
     var statusDescription: String {
         switch self {
         case .checking:
@@ -59,6 +75,8 @@ enum SetupHealth: Equatable {
             return NSLocalizedString("Manual mode — background automation paused", comment: "Setup health status")
         case .needsLegacyPermissionCleanup:
             return NSLocalizedString("Legacy administrator permission cleanup required", comment: "Setup health status")
+        case .needsAppManagementPermission:
+            return NSLocalizedString("App Management permission required", comment: "Setup health status")
         case .error(let message):
             return message
         }
@@ -73,5 +91,29 @@ enum SetupNotificationPolicy {
     ) -> Bool {
         guard current.needsAttention else { return false }
         return launchedHidden || previousReady == true
+    }
+}
+
+/// A request received during a check must validate a fresh state before callbacks run.
+struct SetupCheckQueue {
+    private(set) var isChecking = false
+    private var needsRecheck = false
+
+    /// Returns `true` when a check can start; otherwise requests a fresh check after the current one.
+    mutating func request() -> Bool {
+        guard !isChecking else {
+            needsRecheck = true
+            return false
+        }
+        isChecking = true
+        return true
+    }
+
+    /// Ends the current check and returns whether another check was requested during it.
+    mutating func finish() -> Bool {
+        isChecking = false
+        let recheck = needsRecheck
+        needsRecheck = false
+        return recheck
     }
 }

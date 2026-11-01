@@ -128,6 +128,44 @@ enum IconInteractionTests {
             "reusing a history entry must not create another entry"
         )
 
+        assertFalse(DockPreviewPolicy.shouldShow(mode: "never", isDockFilter: true, isFolderFilter: false), "Never must hide the preview even in the Dock filter")
+        assertTrue(DockPreviewPolicy.shouldShow(mode: "always", isDockFilter: false, isFolderFilter: false), "Always shows the preview for applications")
+        assertFalse(DockPreviewPolicy.shouldShow(mode: "always", isDockFilter: false, isFolderFilter: true), "folder browsing never shows the Dock")
+
+        try! IconWriteVerification.verify(removing: false, hasCustomIcon: true)
+        try! IconWriteVerification.verify(removing: true, hasCustomIcon: false)
+        for removing in [false, true] {
+            do {
+                try IconWriteVerification.verify(removing: removing, hasCustomIcon: removing)
+                preconditionFailure("an unretained OS write must fail before committing cache/history")
+            } catch is IconWriteVerification.Failure { }
+            catch { preconditionFailure("unexpected verification error") }
+        }
+
+        enum ApplyFailure: Error { case denied }
+        var cached = "previous-success"
+        var discarded = false
+        do {
+            try IconApplicationTransaction.perform(
+                prepare: { "candidate" },
+                apply: { _ in throw ApplyFailure.denied },
+                commit: { cached = $0 },
+                discard: { _ in discarded = true }
+            )
+            preconditionFailure("a failed apply must throw")
+        } catch ApplyFailure.denied { } catch { preconditionFailure("unexpected error") }
+        assertEqual(cached, "previous-success", "failed writes must preserve the last successful cache")
+        assertTrue(discarded, "failed writes discard staged images")
+        discarded = false
+        try! IconApplicationTransaction.perform(
+            prepare: { "new-success" },
+            apply: { _ in assertEqual(cached, "previous-success", "the candidate must stay invisible until applied") },
+            commit: { cached = $0 },
+            discard: { _ in discarded = true }
+        )
+        assertEqual(cached, "new-success", "a successful application commits the new cache")
+        assertFalse(discarded, "committed images must remain available")
+
         print("PASS: automatic remote icon loading is configurable and history reuse is idempotent")
     }
 

@@ -1,3 +1,5 @@
+import Foundation
+
 enum IconFetchInteractionEvent {
     case viewAppeared
     case styleChanged
@@ -71,5 +73,48 @@ enum IconApplicationSource {
 enum IconApplicationPolicy {
     static func shouldRecordHistory(source: IconApplicationSource) -> Bool {
         source != .history
+    }
+}
+
+/// Keep the last successful cache until the helper has accepted the new icon.
+enum IconApplicationTransaction {
+    /// Applies and commits a prepared value. If either step throws, discards the value and rethrows
+    /// the error; a preparation error propagates without calling `discard`.
+    static func perform<Prepared>(
+        prepare: () throws -> Prepared,
+        apply: (Prepared) throws -> Void,
+        commit: (Prepared) throws -> Void,
+        discard: (Prepared) -> Void
+    ) throws {
+        let prepared = try prepare()
+        do {
+            try apply(prepared)
+            try commit(prepared)
+        } catch {
+            discard(prepared)
+            throw error
+        }
+    }
+}
+
+enum DockPreviewPolicy {
+    /// Shows the preview for applications in `always` mode or in the Dock filter,
+    /// except when the mode is `never`.
+    static func shouldShow(mode: String, isDockFilter: Bool, isFolderFilter: Bool) -> Bool {
+        !isFolderFilter && mode != "never" && (mode == "always" || isDockFilter)
+    }
+}
+
+/// A successful process exit alone must not commit an icon the OS did not retain.
+enum IconWriteVerification {
+    struct Failure: LocalizedError {
+        var errorDescription: String? {
+            NSLocalizedString("macOS did not retain the requested icon change. This app may be protected or may manage its own icon.", comment: "Icon write verification failure")
+        }
+    }
+
+    /// Throws `Failure` when the observed custom-icon state does not match the requested operation.
+    static func verify(removing: Bool, hasCustomIcon: Bool) throws {
+        guard hasCustomIcon == !removing else { throw Failure() }
     }
 }

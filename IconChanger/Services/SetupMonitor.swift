@@ -15,24 +15,40 @@ final class SetupMonitor: ObservableObject {
     static let shared = SetupMonitor()
 
     @Published private(set) var health: SetupHealth = .checking
+    @Published private(set) var isChecking = false
+    private var checkQueue = SetupCheckQueue()
+    private var completions: [(SetupHealth) -> Void] = []
     private var checkGeneration = 0
 
     private init() {}
 
-    /// Checks folder access and optional helper health, then publishes the latest result.
+    /// Checks folder access and helper health, then publishes the result.
+    /// Outside preview modes, requests received during a check trigger a fresh check before queued
+    /// completions run on the main actor. Preview modes publish their configured result immediately.
     /// Missing or unavailable helpers select manual mode; legacy grants require cleanup.
-    /// The completion runs on the main queue only if this check is still current.
     func check(
         source: DiagnosticsSource = .system,
         completion: ((SetupHealth) -> Void)? = nil
     ) {
 #if DEBUG
+        if UIReviewMode.isEnabled {
+            let state = ProcessInfo.processInfo.environment["ICONCHANGER_UI_REVIEW_HEALTH"]
+            let reviewHealth: SetupHealth = state == "manual" ? .manualMode
+                : state == "missing" ? .missingHelperFiles(["helper.sh"])
+                : .ready
+            publish(reviewHealth)
+            completion?(reviewHealth)
+            return
+        }
         if ProcessInfo.processInfo.environment["ICONCHANGER_PREVIEW_MANUAL_MODE"] == "1" {
             publish(.manualMode)
             completion?(.manualMode)
             return
         }
 #endif
+        if let completion { completions.append(completion) }
+        guard checkQueue.request() else { return }
+        isChecking = true
         checkGeneration += 1
         let generation = checkGeneration
         let diagnosticsContext = DiagnosticsContext(
@@ -48,7 +64,8 @@ final class SetupMonitor: ObservableObject {
                 "folder_permission_count": String(FolderPermission.shared.permissions.count)
             ]
         )
-        publish(.checking)
+        // Rechecking must not tear down an existing browsing session.
+        if !health.allowsIconBrowsing { publish(.checking) }
 
         guard FolderPermission.shared.hasPermission else {
             DiagnosticsLogger.shared.log(
@@ -66,22 +83,24 @@ final class SetupMonitor: ObservableObject {
             let setupStatus = iconManager.checkSetupStatus(
                 diagnosticsContext: diagnosticsContext
             )
+            let appManagementStatus = iconManager.appManagementStatus()
             let result: SetupHealth
             let details = [
-                "setup_status": Self.setupStatusName(setupStatus)
+                "setup_status": Self.setupStatusName(setupStatus),
+                "app_management_status": Self.appManagementStatusName(appManagementStatus)
             ]
 
             switch setupStatus {
             case .completed:
-                // Let macOS enforce App Management consent when an operation actually needs it.
-                result = .ready
+                switch appManagementStatus {
+                case .denied, .notDetermined:
+                    result = .needsAppManagementPermission
+                case .authorized, .unknown:
+                    result = .ready
+                }
             case .helperFilesMissing(_), .helperFilesOutdated, .sudoersPermissionMissing:
-                // Browsing and user-writable app changes do not require the privileged helper.
-                // Keep background automation paused until the optional helper is healthy.
                 result = .manualMode
             case .legacySudoersPermissionPresent:
-                // A stale user-writable NOPASSWD helper can grant persistent root access.
-                // Require cleanup before proceeding, even for current-user operations.
                 result = .needsLegacyPermissionCleanup
             case .unknownError(let message):
                 result = .error(message)
@@ -106,8 +125,16 @@ final class SetupMonitor: ObservableObject {
         completion: ((SetupHealth) -> Void)?
     ) {
         guard generation == checkGeneration else { return }
+        if checkQueue.finish() {
+            isChecking = false
+            check()
+            return
+        }
         publish(result)
-        completion?(result)
+        isChecking = false
+        let callbacks = completions
+        completions.removeAll()
+        callbacks.forEach { $0(result) }
     }
 
     private func publish(_ newHealth: SetupHealth) {
@@ -133,4 +160,18 @@ final class SetupMonitor: ObservableObject {
         }
     }
 
+    nonisolated private static func appManagementStatusName(
+        _ status: IconManager.AppManagementStatus
+    ) -> String {
+        switch status {
+        case .authorized:
+            return "authorized"
+        case .denied:
+            return "denied"
+        case .notDetermined:
+            return "not_determined"
+        case .unknown:
+            return "unknown"
+        }
+    }
 }

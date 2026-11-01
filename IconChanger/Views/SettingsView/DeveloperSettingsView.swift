@@ -10,41 +10,6 @@ private struct DeveloperAPIKey: Identifiable {
     var value: String
 }
 
-private struct DeveloperMaskedKeyField: View {
-    @Binding var text: String
-    @State private var isEditing = false
-    @FocusState private var isFocused: Bool
-
-    var body: some View {
-        Group {
-            if isEditing {
-                TextField("API Key", text: $text)
-                    .focused($isFocused)
-                    .onChange(of: isFocused) { focused in
-                        if !focused { isEditing = false }
-                    }
-            } else {
-                Text(maskedText)
-                    .foregroundColor(text.isEmpty ? .secondary : .primary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        isEditing = true
-                        DispatchQueue.main.async { isFocused = true }
-                    }
-            }
-        }
-        .textFieldStyle(.roundedBorder)
-    }
-
-    private var maskedText: String {
-        guard text.count > 10 else {
-            return text.isEmpty ? "API Key" : text
-        }
-        return "\(text.prefix(6))...\(text.suffix(5))"
-    }
-}
-
 struct DeveloperSettingsView: View {
     @AppStorage("t2e") private var developerModeEnabled = false
     @AppStorage(DiagnosticsSettings.enabled) private var diagnosticsEnabled = false
@@ -166,17 +131,18 @@ struct DeveloperSettingsView: View {
             } header: {
                 Label("Diagnostics", systemImage: "stethoscope")
             } footer: {
-                Text(
-                    "Diagnostics require both Developer Mode and this switch. Helper output and icon file paths are off by default because they may contain sensitive local information."
-                )
-                .frame(maxWidth: .infinity, alignment: .leading)
+                SettingsFooter {
+                    Text(
+                        "Diagnostics require both Developer Mode and this switch. Helper output and icon file paths are off by default because they may contain sensitive local information."
+                    )
+                }
             }
 
             Section {
                 ForEach($extraAPIKeys) { $key in
                     VStack(alignment: .leading, spacing: 4) {
                         HStack {
-                            DeveloperMaskedKeyField(text: $key.value)
+                            SecureField("API Key", text: $key.value)
                                 .onChange(of: key.value) { _ in
                                     syncExtraKeys()
                                     keyTestResults.removeValue(forKey: key.id)
@@ -229,8 +195,9 @@ struct DeveloperSettingsView: View {
             } header: {
                 Label("Additional API Keys", systemImage: "key.horizontal")
             } footer: {
-                Text("Additional API keys are rotated automatically to distribute usage.")
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                SettingsFooter {
+                    Text("Additional API keys are rotated automatically to distribute usage.")
+                }
             }
 
             Section {

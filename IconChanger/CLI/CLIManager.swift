@@ -29,6 +29,7 @@ import Foundation
     /// Installs the bundled CLI at `installLocation` without requesting administrator privileges.
     /// Rejects an existing symbolic link and publishes installation progress or errors.
     func installCLI() {
+        guard !UIReviewMode.isEnabled else { return }
         isInstalling = true
         lastError = nil
 
@@ -77,6 +78,7 @@ import Foundation
     /// Removes the CLI at `installLocation` without requesting administrator privileges.
     /// Rejects symbolic links and publishes completion or errors.
     func uninstallCLI() {
+        guard !UIReviewMode.isEnabled else { return }
         isInstalling = true
         lastError = nil
 

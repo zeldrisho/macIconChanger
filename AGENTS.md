@@ -16,7 +16,7 @@
 | All regression tests        | `bash tests/run.sh`                                                                                                                                                  |
 | Unsigned CI build           | `xcodebuild build -project IconChanger.xcodeproj -scheme IconChanger -configuration Release -destination 'generic/platform=macOS' CODE_SIGNING_ALLOWED=NO -quiet`        |
 
-## Key Conventions
+## Rules
 
 - Use `fd` for file discovery and `rg` for searching file contents.
 - Run the relevant `tests/*.sh` wrapper rather than compiling its Swift test file directly; wrappers select the required source files.
@@ -28,7 +28,7 @@
 - Do not reintroduce irreversible Launchpad database deletion; `tests/no-launchpad-mutation.sh` guards against it.
 - Use `IconChanger/Resources/Localizable.xcstrings` for user-facing localization.
 
-## External References
+## References
 
 | Need                                    | File                                      |
 | --------------------------------------- | ----------------------------------------- |
